@@ -2269,12 +2269,25 @@ function validateCurrent(form){setMessage('');const field=name=>form.elements.na
   };
   const patchTankDrawingPrintHtml=(markup)=>{
     if(typeof markup!=='string')return markup;
-    const isTankDrawing=/<title>\s*Tank Drawing Set\s*<\/title>/i.test(markup)||/ANGLE STAY SCHEDULE/i.test(markup);
+    const isTankDrawing=/<title>\s*(?:Tank Drawing Set|All Projects)\s*<\/title>/i.test(markup)||/ANGLE STAY SCHEDULE/i.test(markup);
     if(!isTankDrawing)return markup;
+    // Keep the editor untouched, but make every drawing print page a real A4
+    // landscape sheet so tall drawings cannot run below the printable page.
+    const landscapeFitCss=`
+      @page{size:A4 landscape;margin:5mm}
+      html,body{width:287mm;min-height:200mm;margin:0;padding:0;background:#e7ebf0}
+      .pg{box-sizing:border-box;width:287mm;height:200mm;min-height:200mm;max-width:none;margin:18px auto;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;page-break-after:always;break-after:page;box-shadow:0 8px 30px #0002}
+      .pg:last-child{page-break-after:auto;break-after:auto}
+      .pg svg{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}
+      @media screen{.pg{width:min(1400px,calc(100vw - 36px));height:auto;min-height:0;aspect-ratio:297/210}.pg svg{height:100%}}
+      @media print{html,body{width:287mm;min-height:200mm;background:#fff}.previewbar{display:none!important}.pg{width:287mm;height:200mm;min-height:200mm;margin:0;box-shadow:none;page-break-after:always;break-after:page}.pg:last-child{page-break-after:auto;break-after:auto}}
+    `;
+    let output=markup;
+    if(!/id=["']winkoA4LandscapeFit["']/i.test(output))output=output.replace(/<\/head>/i,'<style id="winkoA4LandscapeFit">'+landscapeFitCss+'</style>\n</head>');
     const angleQty=readCurrentExportQuantity();
-    if(angleQty===null)return markup;
+    if(angleQty===null)return output;
     const totalQty=angleQty;
-    return markup
+    return output
       .replace(/(<text\b[^>]*>\s*Total:\s*)\d+(\s*pcs\s*<\/text>)/gi,(_,prefix,suffix)=>prefix+totalQty+suffix)
       .replace(/(Schedule\s+total\s*:?[\s\u00a0]*)\d+(?=\s*pcs\b)/gi,(_,prefix)=>prefix+totalQty);
   };
@@ -2299,6 +2312,19 @@ function validateCurrent(form){setMessage('');const field=name=>form.elements.na
         const current=body.innerHTML;
         const patched=patchTankDrawingPrintHtml(current);
         if(patched!==current)body.innerHTML=patched;
+        // Some browsers expose the popup document's write method as
+        // non-overridable. Append the same fit rules directly after the
+        // document has been written so the export is still reliable there.
+        const title=popup.document?.title||'';
+        if(/Tank Drawing Set|All Projects/i.test(title)||/ANGLE STAY SCHEDULE/i.test(current)){
+          const head=popup.document?.head;
+          if(head&&!head.querySelector('#winkoA4LandscapeFit')){
+            const style=popup.document.createElement('style');
+            style.id='winkoA4LandscapeFit';
+            style.textContent=`@page{size:A4 landscape;margin:5mm}html,body{width:287mm;min-height:200mm;margin:0;padding:0;background:#e7ebf0}.pg{box-sizing:border-box;width:287mm;height:200mm;min-height:200mm;max-width:none;margin:18px auto;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;page-break-after:always;break-after:page;box-shadow:0 8px 30px #0002}.pg:last-child{page-break-after:auto;break-after:auto}.pg svg{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}@media screen{.pg{width:min(1400px,calc(100vw - 36px));height:auto;min-height:0;aspect-ratio:297/210}.pg svg{height:100%}}@media print{html,body{width:287mm;min-height:200mm;background:#fff}.previewbar{display:none!important}.pg{width:287mm;height:200mm;min-height:200mm;margin:0;box-shadow:none;page-break-after:always;break-after:page}.pg:last-child{page-break-after:auto;break-after:auto}}`;
+            head.appendChild(style);
+          }
+        }
       }catch(error){
         console.warn('Index PDF quantity bridge could not refresh the print window:',error);
       }
