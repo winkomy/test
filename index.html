@@ -3561,9 +3561,11 @@ async function approveCurrentBomForProduction(){
  const msg=pending.length?`This BOM contains ${pending.length} critical preliminary/scaled item(s). Confirm that you reviewed the quantities for production.`:"Confirm this BOM has been reviewed and approved for production.";
  if(!confirm(msg))return;
  window.__winkoProductionApprovalBusy=true;const button=document.getElementById('approveProductionBomBtn');if(button){button.disabled=true;button.textContent='Saving...'}
- const productionRecord={reference:document.getElementById('reference')?.value||document.getElementById('ceRef')?.value||'',fingerprint:bomApprovalFingerprint(s),approvedBy:by,approvedAt:new Date().toISOString()};
+ const productionReference=document.getElementById('reference')?.value||document.getElementById('ceRef')?.value||'';
+ const linkedQuotation=window.WinkoApproval?.records?.()?.[productionReference]||null;
+ const productionRecord={reference:productionReference,quotationId:linkedQuotation?.supabaseId||null,quotation:linkedQuotation,fingerprint:bomApprovalFingerprint(s),approvedBy:by,approvedAt:new Date().toISOString()};
  try{if(window.WinkoDB?.isConnected?.()){const remote=await window.WinkoDB.saveProductionApproval?.(productionRecord);if(!remote){throw new Error('Production approval was not saved to Supabase.')}window.winkoRemoteProductionApproval={...remote,fingerprint:productionRecord.fingerprint,approvedBy:productionRecord.approvedBy,approvedAt:productionRecord.approvedAt};window.winkoRemoteProductionApprovalLoaded=true;alert('Production approval saved to Supabase.')}else{localStorage.setItem(PRODUCTION_APPROVAL_KEY,JSON.stringify(productionRecord));alert('Production approval saved locally in Local Test Mode.')}updateProductionApprovalUI(s);return true}
- catch(e){window.WinkoDB?.setSyncError?.(e);alert('Production approval saved locally, but not synced. Retry Sync.');localStorage.setItem(PRODUCTION_APPROVAL_KEY,JSON.stringify({...productionRecord,syncStatus:'error'}));return false}
+ catch(e){window.WinkoDB?.setSyncError?.(e);const detail=String(e?.message||e||'Unknown Supabase error');alert('Production approval saved locally, but not synced. Retry Sync.\n\n'+detail);localStorage.setItem(PRODUCTION_APPROVAL_KEY,JSON.stringify({...productionRecord,quotation:undefined,syncStatus:'error',syncError:detail}));return false}
  finally{window.__winkoProductionApprovalBusy=false;if(button){button.disabled=false;updateProductionApprovalUI(state())}}
 }
 function updateBomSourceSummary(s){
@@ -5226,15 +5228,26 @@ body[data-app-role="sales"] .sales-more-wording-btn{display:inline-flex}
    const p={quotation_id:quoteId,status:safe(row.status||'Draft'),event_type:eventType,approved_by:row.approvedBy||null,approval_note:row.approvalNote||null,fingerprint:row.approvedFingerprint||row.submittedFingerprint||null};
    const key=[quoteId,eventType,p.fingerprint||''].join(':');
    const existing=await state.client.from(TABLE.approvals).select('id').eq('event_key',key).limit(1);
-   if(existing.error)throw existing.error;
+   if(existing.error){reportTableError('approvals',existing.error);return null}
    if(existing.data?.length)return existing.data[0];
-   const r=await state.client.from(TABLE.approvals).insert({...p,event_key:key}).select().single();if(r.error)throw r.error;return r.data;
+   const r=await state.client.from(TABLE.approvals).insert({...p,event_key:key}).select().single();if(r.error){reportTableError('approvals',r.error);return null}return r.data;
  }
  async function saveBomRemote(snapshot,quoteId){
    if(!state.client||!quoteId||!Array.isArray(snapshot?.items))return null;
    const rows=buildBomRowsForRemote(snapshot,quoteId);
    const r=await state.client.rpc('winko_test_replace_bom',{quotation_id:quoteId,bom_rows:rows});
-   if(r.error)throw r.error;
+   if(r.error){
+     const message=safe(r.error.message||r.error);
+     if(/function|rpc|could not find|does not exist|42883/i.test(message)){
+       const old=await state.client.from(TABLE.bom).select('id').eq('quotation_id',quoteId);
+       if(old.error){reportTableError('bom',old.error);return null}
+       let inserted=[];
+       if(rows.length){const direct=await state.client.from(TABLE.bom).insert(rows).select('id');if(direct.error){reportTableError('bom',direct.error);return null}inserted=direct.data||[]}
+       if(old.data?.length){const removed=await state.client.from(TABLE.bom).delete().in('id',old.data.map(row=>row.id));if(removed.error){reportTableError('bom',removed.error);return inserted}}
+       return inserted;
+     }
+     reportTableError('bom',r.error);return null
+   }
    return r.data;
  }
  async function saveQuotationRecord(rec){
@@ -5247,8 +5260,12 @@ body[data-app-role="sales"] .sales-more-wording-btn{display:inline-flex}
        const conflict=await c.from(TABLE.quotations).select('id').eq('reference',payload.reference).neq('id',rec.supabaseId).limit(1);if(conflict.error)throw conflict.error;if(conflict.data?.length){const error=new Error('This quotation reference already exists. A new quotation number is required.');error.code='DUPLICATE_QUOTATION_REFERENCE';throw error}
        q=await c.from(TABLE.quotations).update(payload).eq('id',rec.supabaseId).select().single();
      }else{
-       const conflict=await c.from(TABLE.quotations).select('id').eq('reference',payload.reference).limit(1);if(conflict.error)throw conflict.error;if(conflict.data?.length){const error=new Error('This quotation reference already exists. A new quotation number is required.');error.code='DUPLICATE_QUOTATION_REFERENCE';throw error}
-       q=await c.from(TABLE.quotations).insert(payload).select().single();
+       const conflict=await c.from(TABLE.quotations).select('id,customer_name,project_name').eq('reference',payload.reference).limit(1);if(conflict.error)throw conflict.error;
+       const existingRemote=conflict.data?.[0];
+       if(existingRemote&&['local-only','pending','error'].includes(rec.syncStatus)&&norm(existingRemote.customer_name)===norm(payload.customer_name)&&norm(existingRemote.project_name)===norm(payload.project_name)){
+         rec.supabaseId=existingRemote.id;q=await c.from(TABLE.quotations).update(payload).eq('id',existingRemote.id).select().single();
+       }else if(existingRemote){const error=new Error('This quotation reference already exists. A new quotation number is required.');error.code='DUPLICATE_QUOTATION_REFERENCE';throw error}
+       else q=await c.from(TABLE.quotations).insert(payload).select().single();
      }
      if(q.error)throw q.error;rec.supabaseId=q.data.id;rec.supabaseCustomerId=ids.customerId;rec.supabaseProjectId=ids.projectId;
      const remote={...rec};await saveApprovalRemote(remote,q.data.id);await saveBomRemote(payload.snapshot,q.data.id);await saveAudit({quotation_id:q.data.id,quotation_reference:payload.reference,action:'quotation_'+payload.status.toLowerCase().replace(/[^a-z0-9]+/g,'_'),role:role(),details:{status:payload.status}});return q.data;
@@ -5266,12 +5283,21 @@ body[data-app-role="sales"] .sales-more-wording-btn{display:inline-flex}
  }
  async function setNotificationReadRemote(n,read){const c=await getClient();if(!c||!n)return null;const eventKey=safe(n.eventKey||n.id);if(!eventKey)return null;const r=await c.from(TABLE.notifications).update({is_read:!!read}).eq('event_key',eventKey);if(r.error){reportTableError('notifications',r.error);throw r.error}return true}
  async function loadProductionApprovalRemote(referenceOrQuotationId){const c=await getClient();if(!c)return null;let quotationId=uuid(referenceOrQuotationId)?referenceOrQuotationId:null;if(!quotationId&&referenceOrQuotationId){const q=await c.from(TABLE.quotations).select('id').eq('reference',safe(referenceOrQuotationId)).limit(1);if(q.error)throw q.error;quotationId=q.data?.[0]?.id||null}if(!quotationId){window.winkoRemoteProductionApproval=null;return null}const r=await c.from(TABLE.production).select('*').eq('quotation_id',quotationId).order('created_at',{ascending:false}).limit(1);if(r.error)throw r.error;const row=r.data?.[0]||null;window.winkoRemoteProductionApproval=row?{...row,reference:safe(referenceOrQuotationId),fingerprint:row.bom_fingerprint,approvedBy:row.approved_by,approvedAt:row.approved_at||row.created_at}:null;window.winkoRemoteProductionApprovalLoaded=true;try{updateProductionApprovalUI?.(state())}catch(e){}return window.winkoRemoteProductionApproval}
- async function saveProductionApprovalRemote(a){const c=await getClient();if(!c||!a)return null;let quotationId=uuid(a.quotationId)?a.quotationId:null;if(!quotationId&&a.reference){const q=await c.from(TABLE.quotations).select('id').eq('reference',a.reference).limit(1);if(q.error)throw q.error;quotationId=q.data?.[0]?.id||null}if(!quotationId)return null;const r=await c.from(TABLE.production).insert({quotation_id:quotationId,bom_fingerprint:safe(a.fingerprint),approved_by:safe(a.approvedBy),status:'APPROVED FOR PRODUCTION',notes:safe(a.notes||'')}).select().single();if(r.error)throw r.error;window.winkoRemoteProductionApproval={...r.data,reference:a.reference||''};window.winkoRemoteProductionApprovalLoaded=true;return r.data}
+ async function saveProductionApprovalRemote(a){
+   const c=await getClient();if(!c||!a)return null;let quotationId=uuid(a.quotationId)?a.quotationId:null;
+   const linked=a.quotation||(!quotationId&&a.reference?localApprovals()[a.reference]:null);
+   if(!quotationId&&linked?.snapshot){const quote={...linked,reference:linked.reference||a.reference,status:linked.status||'Draft',syncStatus:linked.syncStatus||'pending'};const saved=await saveQuotationRecord(quote);quotationId=saved?.id||quote.supabaseId||null}
+   if(!quotationId&&a.reference){const q=await c.from(TABLE.quotations).select('id').eq('reference',a.reference).limit(1);if(q.error)throw q.error;quotationId=q.data?.[0]?.id||null}
+   if(!quotationId)throw new Error('Production approval needs a synced quotation reference. Save the quotation first.');
+   const existing=await c.from(TABLE.production).select('*').eq('quotation_id',quotationId).eq('bom_fingerprint',safe(a.fingerprint)).order('created_at',{ascending:false}).limit(1);if(existing.error)throw existing.error;
+   if(existing.data?.[0]){const row=existing.data[0];window.winkoRemoteProductionApproval={...row,reference:a.reference||''};window.winkoRemoteProductionApprovalLoaded=true;return row}
+   const r=await c.from(TABLE.production).insert({quotation_id:quotationId,bom_fingerprint:safe(a.fingerprint),approved_by:safe(a.approvedBy),status:'APPROVED FOR PRODUCTION',notes:safe(a.notes||'')}).select().single();if(r.error){reportTableError('production',r.error);throw r.error}window.winkoRemoteProductionApproval={...r.data,reference:a.reference||''};window.winkoRemoteProductionApprovalLoaded=true;return r.data
+ }
  async function savePriceDatabaseRemote(map){const c=await getClient();if(!c||!map)return[];const rows=Object.entries(map).filter(([,v])=>!v?.archived).map(([itemKey,v])=>({item_key:itemKey,item_name:safe(v?.name||v?.item_name||itemKey),category:safe(v?.category||''),price:num(v?.price),currency:['MYR','SGD','USD'].includes(v?.currency)?v.currency:'MYR'}));if(!rows.length)return[];const r=await c.from(TABLE.prices).upsert(rows,{onConflict:'item_key'}).select();if(r.error){reportTableError('prices',r.error);throw r.error}return r.data||[]}
  async function saveNumberSettingsRemote(s){const c=await getClient();if(!c||!s)return null;const r=await c.from(TABLE.numbers).upsert({id:true,prefix:s.prefix,year:s.year,next_sequence:num(s.nextSequence)||1,digits:num(s.digits)||3,auto_number:s.autoNumber!==false,reset_each_year:s.resetEachYear!==false},{onConflict:'id'}).select().single();if(r.error){reportTableError('numbers',r.error);throw r.error}return r.data}
  async function loadNumberSettingsRemote(){const c=await getClient();if(!c)return null;const r=await c.from(TABLE.numbers).select('*').eq('id',true).limit(1);if(r.error)throw r.error;const x=r.data?.[0];return x?{version:2,prefix:x.prefix,year:x.year,nextSequence:x.next_sequence,digits:x.digits,autoNumber:x.auto_number,resetEachYear:x.reset_each_year}:null}
  async function allocateQuotationNumber(){const c=await getClient();if(!c)throw new Error('Supabase client unavailable');const r=await c.rpc('winko_test_allocate_quotation_number');if(r.error){reportTableError('numbers',r.error);throw r.error}const value=Array.isArray(r.data)?r.data[0]:r.data;if(typeof value==='string')return value;return value?.quotation_number||value?.reference||value?.next_reference||null}
- async function saveAudit(a){const c=await getClient();if(!c||!a)return;const r=await c.from(TABLE.audit).insert({quotation_id:uuid(a.quotation_id)?a.quotation_id:null,quotation_reference:a.quotation_reference||null,action:safe(a.action||'event'),role:a.role||role(),details:a.details||{}});if(r.error)throw r.error}
+ async function saveAudit(a){const c=await getClient();if(!c||!a)return;const r=await c.from(TABLE.audit).insert({quotation_id:uuid(a.quotation_id)?a.quotation_id:null,quotation_reference:a.quotation_reference||null,action:safe(a.action||'event'),role:a.role||role(),details:a.details||{}});if(r.error)reportTableError('audit',r.error);return r.data||null}
  function hydrateQuotations(rows){
    if(!Array.isArray(rows))return;
    const cache=localApprovals(),remoteRefs=new Set(),next={};
@@ -5307,6 +5333,11 @@ body[data-app-role="sales"] .sales-more-wording-btn{display:inline-flex}
  function stopPolling(){if(state.pollTimer){clearInterval(state.pollTimer);state.pollTimer=0}}
  function startPolling(){if(state.pollTimer)return;state.pollTimer=setInterval(()=>{if(!document.hidden)syncRemote().catch(()=>{})},12000)}
  function scheduleRealtimeReconnect(){if(state.reconnectTimer)return;state.reconnectTimer=setTimeout(async()=>{state.reconnectTimer=0;try{if(state.channel)await state.client?.removeChannel?.(state.channel)}catch(e){}state.channel=null;subscribe()},5000)}
+ async function flushPendingProductionApproval(){
+   const pending=readJson('winkoProductionBomApprovalV1',null);if(!pending||pending.syncStatus!=='error'||!pending.reference)return null;
+   try{const row=await saveProductionApprovalRemote(pending);if(row){writeJson('winkoProductionBomApprovalV1',{...pending,...row,syncStatus:'synced'});return row}}catch(error){state.lastError=safe(error?.message||error)}
+   return null;
+ }
  async function syncRemote(){
    if(!state.client)return{ok:false};
    const entries=Object.entries(TABLE),hydratedKeys=new Set(['customers','projects','quotations','notifications','prices','numbers']);
@@ -5318,6 +5349,7 @@ body[data-app-role="sales"] .sales-more-wording-btn{display:inline-flex}
    if(data.customers&&data.projects&&data.quotations)hydrateCustomers(data.customers,data.projects,data.quotations);
    let priceResult=null;if(data.prices){priceResult=window.hydrateRemotePriceDatabase?.(data.prices);if(priceResult?.applied){try{window.applyPricesToBom?.(false);calculate?.();prepareQuotation?.();window.renderPriceDatabase?.()}catch(error){window.WinkoErrorHandler?.report(error,'price-sync')}}}
    if(data.numbers?.[0]){const x=data.numbers[0];writeJson('winkoQuotationNumberSettings',{version:2,prefix:x.prefix,year:x.year,nextSequence:x.next_sequence,digits:x.digits,autoNumber:x.auto_number,resetEachYear:x.reset_each_year})}
+   await flushPendingProductionApproval();
    state.lastSyncedAt=new Date().toISOString();setStatus(failed.length?'degraded':'connected',failed.map(x=>x.key+': '+safe(x.error?.message||x.error)).join('; '));
    try{window.winkoNotifications?.render?.();window.winkoRenderRoleDashboard?.();window.winkoRenderQuotations?.();window.winkoRenderApprovalQueue?.();window.winkoRenderQuotationNumberSettings?.();window.winkoRenderMainCustomers?.()}catch(error){console.warn('Remote UI refresh failed',error)}
    return{ok:true,partial:!!failed.length,failed,priceResult};
