@@ -357,11 +357,11 @@ body.pro-ui .nav,body.pro-ui .btn,body.pro-ui .tb,body.pro-ui input,body.pro-ui 
   window.addEventListener("load",function(){if(!bomMode)return;setTimeout(function(){if(!window.WinkoCanonicalBom&&!window.BOM_CANONICAL)window.__reportStudioStartupError({code:"BOM_CANONICAL_MISSING",message:"The canonical BOM library did not initialize.",scriptUrl:new URL("assets/js/bom-canonical.js",location.href).href,missingGlobal:"WinkoCanonicalBom / BOM_CANONICAL"});else if(!window.WinkoStudioBomEngine)window.__reportStudioStartupError({code:"STUDIO_ENGINE_MISSING_GLOBAL",message:"Studio loaded but WinkoStudioBomEngine was not created.",scriptUrl:location.href,missingGlobal:"WinkoStudioBomEngine"})},0)});
 })();
 </script>
-<script>if(!window.__studioBomEngineMode)document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" onerror="window.__supabaseLoadFailed=true;console.warn(\'Supabase client library unavailable; continuing in Local Test Mode\')"><\/script>');else window.__supabaseSkippedForBomEngine=true;</script>
+<script>if(!window.__studioBomEngineMode)document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" onerror="window.__supabaseLoadFailed=true;console.warn(\'Supabase client library unavailable; sign-in is required\')"><\/script>');else window.__supabaseSkippedForBomEngine=true;</script>
 <script src="assets/js/bom-canonical.js" data-runtime-required="canonical-bom" onerror="window.__bomCanonicalLoadFailed=true;window.__reportStudioStartupError&&window.__reportStudioStartupError({code:'BOM_CANONICAL_LOAD_FAILED',message:'Required canonical BOM library failed to load.',scriptUrl:new URL('assets/js/bom-canonical.js',location.href).href,missingGlobal:'WinkoCanonicalBom / BOM_CANONICAL'})"></script>
 </head>
 <body class="master-auth-locked">
-<script>if(window.__winkoIndexLaunchMode)document.body.classList.remove("master-auth-locked");</script>
+<!-- Supabase Auth controls the Studio lock even when launched from index.html. -->
 <div class="app">
   <header>
     <button class="menuBtn sb" id="menuBtn">☰</button>
@@ -522,7 +522,7 @@ window.addEventListener("unhandledrejection",function(event){
   window.WinkoRuntime.notifyError("A Studio background operation failed. Check your connection and retry.",{technical:reason,context:"unhandledrejection",dedupeKey:"rejection:"+(reason&&reason.message||reason||"")});
 });
 window.addEventListener("message",function(event){var message=event.data;if(!message||typeof message!=="object"||!["winko-index","winko-super-app"].includes(message.source))return;var validPayload=message.payload==null||typeof message.payload==="object";if(typeof message.type!=="string"||!validPayload||event.source!==window.parent||!window.WinkoRuntime.isTrustedOrigin(event.origin)){console.error("Blocked invalid parent message:",{origin:event.origin,type:message.type});event.stopImmediatePropagation()}},true);
-document.addEventListener("DOMContentLoaded",function(){if(window.__bomCanonicalLoadFailed||!(window.WinkoCanonicalBom||window.BOM_CANONICAL))window.WinkoRuntime.notifyError("The required BOM calculation library did not load. Studio BOM and quotation tools are unavailable.",{dedupeKey:"canonical-missing"});if(new URLSearchParams(location.search).get("mode")!=="bom-engine"&&(window.__supabaseLoadFailed||!window.supabase))window.WinkoRuntime.notifyWarning("Cloud unavailable — Studio remains available in Local Test Mode.",{context:"supabase-dependency",dedupeKey:"supabase-dependency"})},{once:true});
+document.addEventListener("DOMContentLoaded",function(){if(window.__bomCanonicalLoadFailed||!(window.WinkoCanonicalBom||window.BOM_CANONICAL))window.WinkoRuntime.notifyError("The required BOM calculation library did not load. Studio BOM and quotation tools are unavailable.",{dedupeKey:"canonical-missing"});if(new URLSearchParams(location.search).get("mode")!=="bom-engine"&&(window.__supabaseLoadFailed||!window.supabase))window.WinkoRuntime.notifyWarning("Supabase sign-in is unavailable. Reload when the connection is restored.",{context:"supabase-dependency",dedupeKey:"supabase-dependency"})},{once:true});
 </script>
 <script>
 const PANEL_FT=4;
@@ -3088,7 +3088,7 @@ if(new URLSearchParams(location.search).get("mode")!=="bom-engine")setTimeout(as
   try{
     const sessionResult=await getStudioWorkspaceClient()?.auth.getSession();
     if(sessionResult?.data?.session)await loadStudioCloudState({force:false});
-    else setStudioCloudStatus("","Saved locally - sign in for cloud projects");
+    else setStudioCloudStatus("","Saved locally - linked to Main workspace");
   }catch(error){console.warn("Studio cloud startup deferred:",error);}
 },120);
 
@@ -3354,21 +3354,12 @@ body.master-auth-locked>*:not(#studioAuthGate):not(script):not(style){visibility
     return studioAccess.authenticated;
   }
   function showStudioAuthGate(message){
-    if(document.getElementById("studioAuthGate"))return;
-    const gate=document.createElement("div");gate.id="studioAuthGate";gate.className="studio-auth-gate";gate.innerHTML='<section class="studio-auth-panel"><b>WINKO</b><h2>Secure Studio access</h2><p>'+String(message||"Sign in through the main engineering workspace before opening 3D Studio.").replace(/[&<>"']/g,function(ch){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];})+'</p><div style="display:flex;flex-wrap:wrap;gap:8px"><a href="2D.html">Back to 2D Drawing</a><a href="index.html">Open secure workspace</a></div></section>';document.body.appendChild(gate);
+    const target=new URL("index.html",location.href);if(!businessUser)target.searchParams.set("returnTo","studio.html");if(location.hash)target.hash=location.hash;location.replace(target.href);
   }
-  function enableStudioLocalMode(message){
-    const role=String(localStorage.getItem('winkoAppRole')||'main').toLowerCase();
-    if(role!=='main')return false;
-    businessUser={id:'local-main',email:'local@winko.test'};
-    businessMembership={id:'local-main',company_id:null,role:'main',status:'local',email:'',display_name:'Main · Local Test Mode'};
-    updateStudioAccess({user:businessUser});
-    document.getElementById('studioAuthGate')?.remove();
-    document.body.classList.remove('master-auth-locked');
-    setStudioCloudStatus?.('saved',message||'Local Test Mode');
-    window.setSyncStatus?.('local-only',message||'Cloud unavailable; Studio remains saved locally.');
-    return true;
-  }
+  // Local/demo sessions are never an authentication source. The active
+  // Supabase session below is required for Studio cloud access.
+  function localMainSession(){return null}
+  function enableStudioLocalMode(){return false}
   function studioBusinessDb(){if(businessClient)return businessClient;if(typeof getStudioWorkspaceClient==="function")businessClient=getStudioWorkspaceClient();else if(window.supabase&&window.supabase.createClient)businessClient=window.supabase.createClient(BUSINESS_CLOUD.url,BUSINESS_CLOUD.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});return businessClient;}
   async function syncStudioBusinessRecord(reason){
     if(businessSyncing)return false;
@@ -3406,7 +3397,7 @@ body.master-auth-locked>*:not(#studioAuthGate):not(script):not(style){visibility
   }
   function studioAuthRequestWithTimeout(request,timeoutMs,message){let timer;return Promise.race([Promise.resolve(request),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message||"The secure request timed out.")),timeoutMs)})]).finally(()=>clearTimeout(timer))}
   async function initStudioBusinessCloud(){
-    const db=studioBusinessDb();if(!db){if(enableStudioLocalMode("Local Test Mode — secure cloud libraries unavailable"))return true;showStudioAuthGate("Secure cloud libraries could not be loaded.");return false}
+    const db=studioBusinessDb();if(!db){showStudioAuthGate("Secure Supabase libraries could not be loaded. Return to the main workspace and retry.");return false}
     const sessionResult=await studioAuthRequestWithTimeout(db.auth.getSession(),12000,"Session verification timed out."),session=sessionResult.data&&sessionResult.data.session||null;businessUser=session&&session.user||null;updateStudioAccess(session);
     if(!businessUser){showStudioAuthGate("Sign in through the main engineering workspace before opening 3D Studio.");return false}
     let accessResult=await studioAuthRequestWithTimeout(db.rpc("get_current_access_context"),12000,"Company access check timed out.");
@@ -3417,7 +3408,7 @@ body.master-auth-locked>*:not(#studioAuthGate):not(script):not(style){visibility
     const bomEngineMode=BOM_ENGINE_MODE;
     businessReadOnly=false;
     businessMembership={id:access.membershipId,company_id:access.companyId,role:access.role,status:access.status,email:access.email,display_name:access.fullName||access.email};
-    if(!bomEngineMode)document.body.classList.remove("master-auth-locked");
+    if(!bomEngineMode){document.body.classList.remove("master-auth-locked","winko-secure-role-locked");document.getElementById("winkoStudioRoleGate")?.remove();}
     S.cloudCompanyId=businessMembership.company_id;S.cloudRole=businessMembership.role;S.businessReadOnly=businessReadOnly;installStudioRoleGuard();
     try{await loadLatestStudioBusinessRecord()}catch(error){console.warn("Secure Studio cloud load unavailable:",error)}
     if(S.cloudProjectId)scheduleStudioBusinessSync("startup");
@@ -3429,9 +3420,9 @@ body.master-auth-locked>*:not(#studioAuthGate):not(script):not(style){visibility
     return true;
   }
   window.syncStudioBusinessRecord=syncStudioBusinessRecord;window.scheduleStudioBusinessSync=scheduleStudioBusinessSync;window.getStudioBusinessIdentity=function(){return{user:businessUser,membership:businessMembership,readOnly:businessReadOnly,cloudProjectId:S.cloudProjectId||null,cloudDrawingId:S.cloudDrawingId||null,cloudStudioModelId:S.cloudStudioModelId||null}};
-  if(!BOM_ENGINE_MODE&&!window.__winkoIndexLaunchMode){
+  if(!BOM_ENGINE_MODE){
     studioAccess.initialize=initStudioBusinessCloud;
-    window.WinkoAccessReady=studioAuthRequestWithTimeout(studioAccess.initialize(),15000,"Studio authentication startup timed out.").catch(function(error){console.warn("Secure Studio startup unavailable; continuing locally:",error);if(enableStudioLocalMode("Local Test Mode — cloud access unavailable")){window.WinkoRuntime?.notifyWarning?.("Cloud unavailable — Studio remains available locally.");return true}showStudioAuthGate("Secure Studio could not verify your company access. Return to the main workspace and sign in again.");return false}).finally(function(){window.WinkoRuntime?.unlockAuthentication?.()});
+    window.WinkoAccessReady=studioAuthRequestWithTimeout(studioAccess.initialize(),15000,"Studio authentication startup timed out.").catch(function(error){console.warn("Secure Studio startup failed:",error);showStudioAuthGate(error?.message||"Secure Studio could not verify your company access. Return to the main workspace and sign in again.");return false}).finally(function(){window.WinkoRuntime?.unlockAuthentication?.()});
     const accessDb=studioBusinessDb();
     if(accessDb&&accessDb.auth)accessDb.auth.onAuthStateChange(function(event,session){
       if(event==="INITIAL_SESSION")return;
@@ -3440,9 +3431,7 @@ body.master-auth-locked>*:not(#studioAuthGate):not(script):not(style){visibility
       window.WinkoAccessReady=refresh.catch(function(error){console.error("Studio access refresh failed:",error);return false});
       Promise.resolve(window.WinkoAccessReady).finally(function(){if(typeof window.renderHdgWorkspace==="function"&&Number(S.step)===3)window.renderHdgWorkspace()});
     });
-  }else{
-    window.WinkoAccessReady=Promise.resolve(false);
-  }
+  }else{window.WinkoAccessReady=Promise.resolve(false);}
 })();
 </script>
 <style id="hdgBomCatalogueStyles">
@@ -4024,5 +4013,52 @@ addEventListener('load',()=>setTimeout(()=>{
 })();
 </script>
 <script src="assets/js/winko-production-runtime.js?v=20260806-db-sync" defer></script>
+<style id="winkoStudioSecureRoleGateStyles">body.winko-secure-role-locked>*:not(#winkoStudioRoleGate):not(script):not(style){visibility:hidden!important}.winko-studio-auth-gate{position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;padding:20px;background:#0a263b}.winko-studio-auth-gate section{width:min(460px,100%);padding:28px;border-radius:15px;background:#fff;color:#173b57;box-shadow:0 24px 70px #0006;font:13px/1.5 Arial}.winko-studio-auth-gate h1{margin:0 0 8px;font-size:22px}.winko-studio-auth-gate p{color:#617482}.winko-studio-auth-gate button{margin-top:12px;padding:10px 14px;border:0;border-radius:8px;background:#173b57;color:#fff;font-weight:800;cursor:pointer}</style>
+<script id="winkoStudioSecureRoleGate">
+(function(){
+  // Supabase Auth in the engineering workspace is the single access gate.
+})();
+</script>
+<script id="winkoStudioLocalMainHandoff">
+(function(){
+  'use strict';
+  // Legacy local-main handoff intentionally disabled; Supabase Auth owns access.
+})();
+</script>
+<script id="winko-visible-labels">
+(()=>{
+  'use strict';
+  // Keep implementation identifiers intact while presenting friendly product language.
+  const label=value=>String(value)
+    .replace(/\bWINKO\s+QUOTATION\b/gi,'WINKO APP')
+    .replace(/\bSUPABASE\b/g,'CLOUD SYNC')
+    .replace(/\bSupabase\b/g,'Cloud Sync')
+    .replace(/\bsupabase\b/g,'cloud sync');
+  const nativeAlert=typeof window.alert==='function'?window.alert.bind(window):null;
+  const nativeConfirm=typeof window.confirm==='function'?window.confirm.bind(window):null;
+  const nativePrompt=typeof window.prompt==='function'?window.prompt.bind(window):null;
+  if(nativeAlert)window.alert=value=>nativeAlert(label(value));
+  if(nativeConfirm)window.confirm=(message,defaultValue)=>nativeConfirm(label(message),defaultValue);
+  if(nativePrompt)window.prompt=(message,defaultValue)=>nativePrompt(label(message),defaultValue);
+  const attributeLabel=(attr,value)=>/https?:\/\//i.test(String(value))
+    ? (attr==='placeholder'&&/supabase/i.test(String(value))?'Cloud project URL':value)
+    : label(value);
+  const ignored=node=>{const el=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;return !!el?.closest?.('script,style,noscript')};
+  const visit=node=>{
+    if(!node)return;
+    if(node.nodeType===Node.TEXT_NODE){if(!ignored(node)){const next=label(node.nodeValue);if(next!==node.nodeValue)node.nodeValue=next}return}
+    if(node.nodeType!==Node.ELEMENT_NODE||ignored(node))return;
+    ['title','aria-label','placeholder'].forEach(attr=>{if(node.hasAttribute(attr)){const current=node.getAttribute(attr),next=attributeLabel(attr,current);if(next!==current)node.setAttribute(attr,next)}});
+    node.childNodes.forEach(visit);
+  };
+  const root=document.body;
+  if(root)visit(root);
+  if(root)new MutationObserver(records=>records.forEach(record=>{
+    if(record.type==='characterData')visit(record.target);
+    else if(record.type==='attributes')visit(record.target);
+    else record.addedNodes.forEach(visit);
+  })).observe(root,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['title','aria-label','placeholder']});
+})();
+</script>
 </body>
 </html>
