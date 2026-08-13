@@ -1970,6 +1970,8 @@ body[data-app-role="sales"] #quotation .cost-grid{display:grid!important;grid-te
 <div class="metric"><span>Roof Panels</span><b id="roofPanelCount">0</b></div>
 <div class="metric"><span>Base Panels</span><b id="basePanelCount">0</b></div>
 <div class="metric"><span>Total Wall Panels</span><b id="wallPanelTotal">0</b></div>
+<div class="metric"><span>Partition Panels</span><b id="partitionPanelTotal">0</b></div>
+<div class="metric"><span>Compartments</span><b id="compartmentCount">1</b></div>
 <div class="metric"><span>Total Panels</span><b id="tp">0</b></div>
 <div class="metric calculated-hidden"><span>BOM Approval Status</span><b id="bomApprovalStatus">Checking</b></div>
 <div class="metric calculated-hidden"><span>Critical Unverified Items</span><b id="criticalUnverifiedCount">0</b></div>
@@ -2409,22 +2411,22 @@ body[data-app-role="sales"] #quotation .cost-grid{display:grid!important;grid-te
 </div>
 <script>
 const defaultItems = [
- {cat:"Panels",item:"Manhole",unit:"pcs",price:0,basis:"Selected tank accessory",formula:s=>Number(document.getElementById("manholeAccessoryQty")?.value)||0},
+ {cat:"Panels",item:"Manhole",unit:"pcs",price:0,basis:"Selected tank accessory; actual quantity",formula:s=>Number(s.manholeAccessoryQty??s.manhole)||0},
  {cat:"Panels",item:"1.5mm (Roof)",unit:"pcs",price:0,basis:"Original C9: L panels × W panels − manhole",formula:s=>s.lp*s.wp-s.manhole},
  {cat:"Panels",item:"5mm (Wall) - Upper",unit:"pcs",price:0,basis:"Wall L1 = one perimeter wall course",formula:s=>activeWallLevels(s.height).l1?2*(s.lp+s.wp):0},
  {cat:"Panels",item:"5.0mm (Wall) - Lower",unit:"pcs",price:0,basis:"Wall L2 = one perimeter wall course",formula:s=>activeWallLevels(s.height).l2?2*(s.lp+s.wp):0},
  {cat:"Panels",item:"Wall L3",unit:"pcs",price:0,basis:"Wall L3 = one perimeter wall course",formula:s=>activeWallLevels(s.height).l3?2*(s.lp+s.wp):0},
  {cat:"Panels",item:"Wall L4",unit:"pcs",price:0,basis:"Wall L4 = one perimeter wall course",formula:s=>activeWallLevels(s.height).l4?2*(s.lp+s.wp):0},
  {cat:"Panels",item:"5.0mm (Base)",unit:"pcs",price:0,basis:"Original C11: L panels × W panels",formula:s=>s.lp*s.wp},
- {cat:"Accessories & Fasteners",item:"Internal Partition",unit:"set",price:0,basis:"User-entered partition size and quantity",formula:s=>partitionSetQty()},
+ {cat:"Accessories & Fasteners",item:"Internal Partition",unit:"set",price:0,basis:"Partition geometry; one set per entered partition",formula:s=>partitionSetQty()},
 
- {cat:"Cleats, Trusses & Rims",item:"Roof Trusses (12 ft)",unit:"pcs",price:0,basis:"Original C20: length panels − 1",formula:s=>s.lp-1},
- {cat:"Cleats, Trusses & Rims",item:'8" Roof Support',unit:"pcs",price:0,basis:"Original C22: 2 × (length panels + width panels)",formula:s=>(s.lp+s.wp)*2},
+ {cat:"Cleats, Trusses & Rims",item:"Roof Trusses (12 ft)",unit:"pcs",price:0,basis:"Existing BOM formula: length-direction panels − 1",formula:s=>Math.max(0,Math.ceil(s.lp)-1)},
+ {cat:"Cleats, Trusses & Rims",item:'8" Roof Support',unit:"pcs",price:0,basis:"Existing BOM Formula: 2 × (length panels + width panels)",formula:s=>(s.lp+s.wp)*2},
  {cat:"Cleats, Trusses & Rims",item:"Type (A) Cleat",unit:"pcs",price:0,basis:"Original C14: (width panels − 1) × 2",formula:s=>(s.wp-1)*2},
  {cat:"Cleats, Trusses & Rims",item:"Type (B) Cleat",unit:"pcs",price:0,basis:"Original C15 formula",formula:s=>Math.ceil((s.lp-1)*(s.wp-1))+Math.ceil(s.lp-1)*2+Math.ceil(s.wp-1)*2},
  {cat:"Cleats, Trusses & Rims",item:"Type (C) Cleat",unit:"pcs",price:0,basis:"Original C16 formula",formula:s=>Math.ceil((s.lp-1)*2+(s.wp-1)*2)+Math.ceil(s.hp-1)*4},
  {cat:"Cleats, Trusses & Rims",item:"Type (C1) Cleat",unit:"pcs",price:0,basis:"Original C17: same as Type C",formula:s=>Math.ceil((s.lp-1)*2+(s.wp-1)*2)+Math.ceil(s.hp-1)*4},
- {cat:"Cleats, Trusses & Rims",item:"Ladder Brackets",unit:"pcs",price:0,basis:"Automatic: 3 brackets per 4 ft ladder level",formula:s=>Math.max(Math.ceil(s.height/4)*3,3)},
+ {cat:"Cleats, Trusses & Rims",item:"Ladder Brackets",unit:"pcs",price:0,basis:"Factory reference: calculated per ladder; production review",formula:s=>{const ext=s.extLadderRequired==="yes"?Math.max(0,Number(s.extLadderQty)||0):0,int=s.intLadderRequired==="yes"?Math.max(0,Number(s.intLadderQty)||0):0,extLength=s.height+2,intLength=s.height;const perLadder=length=>Math.max(Math.ceil(length/4)*3,3);return ext*perLadder(extLength)+int*perLadder(intLength)}},
 
  {cat:"Angle Stays",item:'67 1/2" Angle Stay',unit:"pcs",price:0,basis:"Original C28 formula",formula:s=>Math.ceil(s.lp-1)*2+Math.ceil(s.wp-1)*2+s.hp*4},
  {cat:"Angle Stays",item:'11-3/2"',unit:"pcs",price:0,basis:"Original sheet quantity blank; manual",formula:null},
@@ -2439,18 +2441,18 @@ const defaultItems = [
  {cat:"Accessories & Fasteners",item:"Air-Vents",unit:"pcs",price:0,basis:"Selected tank accessory",formula:s=>accessoryQty("airVentRequired","airVentQty")},
  {cat:"Accessories & Fasteners",item:"Water Level Indicator",unit:"pcs",price:0,basis:"Selected tank accessory",formula:s=>accessoryQty("wliRequired","wliQty")},
 
- {cat:"Accessories & Fasteners",item:"M14x30 BN",unit:"pcs",price:0,basis:"Original I10 formula",formula:s=>Math.ceil(Math.ceil(s.lp+1)*s.wp+Math.ceil(s.wp+1)*s.lp)*17+Math.ceil(Math.ceil(s.lp-1)*s.hp*2+Math.ceil(s.wp-1)*s.hp*2)*17+s.hp*4*17},
- {cat:"Accessories & Fasteners",item:"M14 washer",unit:"pcs",price:0,basis:"Original I11: same as M14x30 BN",formula:s=>Math.ceil(Math.ceil(s.lp+1)*s.wp+Math.ceil(s.wp+1)*s.lp)*17+Math.ceil(Math.ceil(s.lp-1)*s.hp*2+Math.ceil(s.wp-1)*s.hp*2)*17+s.hp*4*17},
- {cat:"Accessories & Fasteners",item:'5/8 x 1½ BNW',unit:"set",price:0,basis:"Combined bolt, nut and washer set",formula:s=>(Math.ceil((s.lp-1)*(s.wp-1))+Math.ceil(s.lp-1)*2+Math.ceil(s.wp-1)*2)*4+((Math.ceil((s.lp-1)*2+(s.wp-1)*2)+Math.ceil(s.hp-1)*4)*2)*2},
- {cat:"Accessories & Fasteners",item:"3/8 x 3/4 BN (set)",unit:"pcs",price:0,basis:"Original I15 formula",formula:s=>Math.ceil((s.lp*Math.ceil(s.wp+1)+Math.ceil(s.lp+1)*s.wp)+(s.lp+s.wp)*2)*10*1.03},
+ {cat:"Accessories & Fasteners",item:"M14x30 BN",unit:"pcs",price:0,basis:"Named base joints + wall joints + corners + partition fasteners",formula:s=>winkoM14Quantity(s)},
+ {cat:"Accessories & Fasteners",item:"M14 washer",unit:"pcs",price:0,basis:"M14 washer quantity mirrors M14x30 BN",formula:s=>winkoM14Quantity(s)},
+ {cat:"Accessories & Fasteners",item:'5/8 x 1½ BNW',unit:"set",price:0,basis:"Named Type B + Type C + Type C1 + partition connection components",formula:s=>winkoBNWQuantity(s)},
+ {cat:"Accessories & Fasteners",item:"3/8 x 3/4 BN (set)",unit:"pcs",price:0,basis:"Roof fasteners + perimeter fasteners + partition fasteners × 1.03 allowance",formula:s=>winkoThreeEighthQuantity(s)},
 
- {cat:"Accessories & Fasteners",item:"5x45x10m Sealant Roll",unit:"roll",price:0,basis:"Original I3 and J3 formulas",formula:s=>Math.round(Math.ceil(((s.hp*Math.ceil(s.lp-1)+s.lp*Math.ceil(s.hp))*2*1.35+((s.hp*Math.ceil(s.wp-1)+s.wp*Math.ceil(s.hp))*2*1.35))+Math.ceil((s.lp*Math.ceil(s.wp+1)+Math.ceil(s.lp+1)*s.wp)*1.35)+s.hp*4*1.22)/10)},
- {cat:"Accessories & Fasteners",item:"3x40x10m Sealant Roll",unit:"roll",price:0,basis:"Original I2 and J2 formulas",formula:s=>Math.ceil(Math.ceil((s.lp*Math.ceil(s.wp+1)+Math.ceil(s.lp+1)*s.wp)*1.35)/10)},
- {cat:"Accessories & Fasteners",item:"8mm Butyl Sealant",unit:"pcs",price:0,basis:"Original J4: Type C + Type C1 + 1",formula:s=>(Math.ceil((s.lp-1)*2+(s.wp-1)*2)+Math.ceil(s.hp-1)*4)*2+1},
- {cat:"Accessories & Fasteners",item:"24mm Butyl Sealant",unit:"pcs",price:0,basis:"Original J5: same as Type B",formula:s=>Math.ceil((s.lp-1)*(s.wp-1))+Math.ceil(s.lp-1)*2+Math.ceil(s.wp-1)*2},
+ {cat:"Accessories & Fasteners",item:"5x45x10m Sealant Roll",unit:"roll",price:0,basis:"Base joints + wall horizontal/vertical joints + corners + partition joint geometry",formula:s=>winkoFiveRollQuantity(s).quantity},
+ {cat:"Accessories & Fasteners",item:"3x40x10m Sealant Roll",unit:"roll",price:0,basis:"Roof/perimeter joints + partition joint geometry",formula:s=>winkoThreeRollQuantity(s).quantity},
+ {cat:"Accessories & Fasteners",item:"8mm Butyl Sealant",unit:"pcs",price:0,basis:"Type C + Type C1 relationship; partition contribution shown separately for review",formula:s=>{const b=winkoButylQuantities(s);return b.external8mm+b.partition8mm}},
+ {cat:"Accessories & Fasteners",item:"24mm Butyl Sealant",unit:"pcs",price:0,basis:"Type B relationship; partition contribution shown separately for review",formula:s=>{const b=winkoButylQuantities(s);return b.external24mm+b.partition24mm}},
  {cat:"Accessories & Fasteners",item:"M16 x40mm B.N.W (set)",unit:"pcs",price:0,
- basis:"M16 quantity = 2 × 5/8 x 1½ BNW quantity",
- formula:s=>2*((Math.ceil((s.lp-1)*(s.wp-1))+Math.ceil(s.lp-1)*2+Math.ceil(s.wp-1)*2)*4+((Math.ceil((s.lp-1)*2+(s.wp-1)*2)+Math.ceil(s.hp-1)*4)*2)*2)}
+ basis:"Approved production relationship: M16 quantity = 2 × total 5/8 x 1½ BNW quantity",
+ formula:s=>2*winkoBNWQuantity(s)}
 ];
 
 let items = defaultItems.map((x,i)=>({...x,id:"d"+i,include:x.include!==false,manualQty:null,overrideReason:"",custom:false}));
@@ -2466,6 +2468,82 @@ function toFeet(value,unit=selectedDimensionUnit()){
 function fromFeet(value,unit=selectedDimensionUnit()){
  return unit==="m" ? Number(value||0)/FT_PER_M : Number(value||0);
 }
+
+/* Named BOM components keep the legacy no-partition results auditable while
+   making partition contributions explicit.  A partition contribution is
+   intentionally zero until a verified factory packing rule exists; the
+   geometry is still reported so Production Review can provide an override. */
+function winkoBOMGeometry(s={}){
+ const L=Math.max(0,Number(s.lp)||0),W=Math.max(0,Number(s.wp)||0),H=Math.max(0,Number(s.hp)||0);
+ const partitions=winkoNormalizePartitions({partitions:Array.isArray(s.partitions)?s.partitions:[]},s.dimensionUnit||s.unit||"ft");
+ const cleats=typeof getWorkbookCleatFormulaQuantities==='function'?getWorkbookCleatFormulaQuantities(L,W,H):{A:Math.max(0,(W-1)*2),B:Math.ceil(Math.max(0,(L-1)*(W-1)))+Math.ceil(Math.max(0,L-1))*2+Math.ceil(Math.max(0,W-1))*2,C:Math.ceil(Math.max(0,(L-1)*2+(W-1)*2))+Math.ceil(Math.max(0,H-1))*4,C1:0};
+ const partitionRows=partitions.map((p,index)=>{const pl=Number(p.lengthFt)||0,pw=Number(p.widthFt)||0,lengthPanels=s.panelSize?pl/Number(s.panelSize):0,widthPanels=s.panelSize?pw/Number(s.panelSize):0;return {id:p.id||`partition-${index+1}`,index:index+1,lengthFt:pl,widthFt:pw,lengthPanels,widthPanels,panelCount:lengthPanels*widthPanels,jointUnits:Math.max(0,2*(lengthPanels+widthPanels))}});
+ const partitionJointUnits=partitionRows.reduce((sum,p)=>sum+p.jointUnits,0);
+ return {baseJointM14:Math.ceil(Math.ceil(L+1)*W+Math.ceil(W+1)*L)*17,wallJointM14:Math.ceil(Math.ceil(L-1)*H*2+Math.ceil(W-1)*H*2)*17,cornerM14:H*4*17,partitionM14:0,bnwFromTypeB:(Math.ceil(Math.max(0,(L-1)*(W-1)))+Math.ceil(Math.max(0,L-1))*2+Math.ceil(Math.max(0,W-1))*2)*4, bnwFromTypeC:(Math.ceil(Math.max(0,(L-1)*2+(W-1)*2))+Math.ceil(Math.max(0,H-1))*4)*2,bnwFromTypeC1:(Math.ceil(Math.max(0,(L-1)*2+(W-1)*2))+Math.ceil(Math.max(0,H-1))*4)*2,bnwFromPartition:0,roofFasteners:Math.ceil(L*Math.ceil(W+1)+Math.ceil(L+1)*W),perimeterFasteners:Math.ceil((L+W)*2),partitionFasteners:0,fastenerAllowance:1.03,partitionJointUnits,partitionRows,cleats};
+}
+function winkoM14Quantity(s){const b=winkoBOMGeometry(s);return b.baseJointM14+b.wallJointM14+b.cornerM14+b.partitionM14}
+function winkoBNWQuantity(s){const b=winkoBOMGeometry(s);return b.bnwFromTypeB+b.bnwFromTypeC+b.bnwFromTypeC1+b.bnwFromPartition}
+function winkoThreeEighthQuantity(s){const b=winkoBOMGeometry(s);return (b.roofFasteners+b.perimeterFasteners+b.partitionFasteners)*10*b.fastenerAllowance}
+function winkoFiveRollQuantity(s){
+ const L=Math.max(0,Number(s.lp)||0),W=Math.max(0,Number(s.wp)||0),H=Math.max(0,Number(s.hp)||0),b=winkoBOMGeometry(s);
+ const baseJoints=(H*Math.ceil(L-1)+L*Math.ceil(H))*2*1.35;
+ const wallJoints=(H*Math.ceil(W-1)+W*Math.ceil(H))*2*1.35;
+ const roofJoints=Math.ceil((L*Math.ceil(W+1)+Math.ceil(L+1)*W)*1.35);
+ const corners=H*4*1.22;
+ const partitionJoints=b.partitionJointUnits*1.35;
+ return {baseJoints,wallJoints,roofJoints,corners,partitionJoints,quantity:Math.round(Math.ceil(baseJoints+wallJoints+roofJoints+corners+partitionJoints)/10)};
+}
+function winkoThreeRollQuantity(s){const L=Math.max(0,Number(s.lp)||0),W=Math.max(0,Number(s.wp)||0),b=winkoBOMGeometry(s);return {externalJoints:Math.ceil(L*Math.ceil(W+1)+Math.ceil(L+1)*W)*1.35,partitionJoints:b.partitionJointUnits*1.35,quantity:Math.ceil((Math.ceil(L*Math.ceil(W+1)+Math.ceil(L+1)*W)*1.35+b.partitionJointUnits*1.35)/10)} }
+function winkoButylQuantities(s){const L=Math.max(0,Number(s.lp)||0),W=Math.max(0,Number(s.wp)||0),H=Math.max(0,Number(s.hp)||0),b=winkoBOMGeometry(s);const typeC=Math.ceil(Math.max(0,(L-1)*2+(W-1)*2))+Math.ceil(Math.max(0,H-1))*4;const typeB=Math.ceil(Math.max(0,(L-1)*(W-1)))+Math.ceil(Math.max(0,L-1))*2+Math.ceil(Math.max(0,W-1))*2;return {external8mm:typeC*2+1,partition8mm:0,external24mm:typeB,partition24mm:0,partitionJointUnits:b.partitionJointUnits};}
+
+/* Geometry/placement graph.  The 2D drawing is authoritative when a linked
+   tankproj drawing exists.  Workbook and historic quantities remain
+   cross-checks; missing placement is never synthesized as a verified layout. */
+const WINKO_STAY_CATALOGUE=[
+ {id:'corner-67.5',label:'67½" Angle Stay',lengthFt:67.5/12,toleranceFt:1.5/12,aliases:['corner','67 1/2','67½']},
+ {id:'stay-44.5',label:'44½" Main Diagonal',lengthFt:44.5/12,toleranceFt:1.5/12,aliases:['44 1/2','44½']},
+ {id:'stay-67',label:'67" Secondary Stay',lengthFt:67/12,toleranceFt:1.5/12,aliases:['67" secondary']},
+ {id:'stay-7-10.25',label:'7 ft 10¼ in Short Tie',lengthFt:7+10.25/12,toleranceFt:2/12,aliases:['7 ft 10 1/4','tie']},
+ {id:'stay-11-3',label:'11 ft 3 in Custom Stay',lengthFt:11.25,toleranceFt:2/12,aliases:['11 ft 3 in']},
+ {id:'stay-11-3.5',label:'11′-3½″ Stay',lengthFt:11+3.5/12,toleranceFt:2/12,aliases:['main','opp','11-3/2','11′-3½']}
+];
+function winkoSafeJson(value,fallback=null){try{return JSON.parse(value)}catch(e){return fallback}}
+function winkoDrawingStore(){try{const store=winkoSafeJson(localStorage.getItem('tankproj'),null);return store&&Array.isArray(store.drawings)?store:null}catch(e){return null}}
+function winkoDrawingDimensions(drawing={}){const g=drawing.geometry||{},panelSize=Number(g.panelSize??drawing.panelSize??4)||4,columns=Number(g.cols??drawing.cols),rows=Number(g.rows??drawing.rows),levels=Number(g.levels??drawing.height);return {panelSize,columns:Number.isFinite(columns)?columns:0,rows:Number.isFinite(rows)?rows:0,levels:Number.isFinite(levels)?levels:0,lengthFt:Number(g.length??drawing.length??columns*panelSize)||0,widthFt:Number(g.width??drawing.width??rows*panelSize)||0,heightFt:Number(g.height??drawing.heightFt??levels*panelSize)||0}}
+function winkoResolveEngineeringDrawing(tank={}){const store=winkoDrawingStore();if(!store)return null;const explicit=tank.localDrawingId||tank.drawingId||tank.engineeringDrawingId,active=(()=>{try{return localStorage.getItem('jutarama_active_drawing_id')}catch(e){return null}})()||store.activeId,candidates=[];if(explicit)candidates.push(store.drawings.find(d=>String(d.id)===String(explicit)));if(active)candidates.push(store.drawings.find(d=>String(d.id)===String(active)));const ref=String(tank.reference||tank.ref||document.getElementById('reference')?.value||document.getElementById('crmRef')?.value||'').trim().toLowerCase();if(ref)candidates.push(store.drawings.find(d=>String(d.reference||d.dwgNo||d.titleBlock?.tankReference||'').trim().toLowerCase()===ref));const sizeMatch=store.drawings.find(d=>{const x=winkoDrawingDimensions(d);return Math.abs(x.lengthFt-Number(tank.length))<.001&&Math.abs(x.widthFt-Number(tank.width))<.001&&Math.abs(x.heightFt-Number(tank.height))<.001});if(sizeMatch)candidates.push(sizeMatch);const drawing=candidates.find(Boolean);if(!drawing)return null;const dims=winkoDrawingDimensions(drawing);if(Math.abs(dims.lengthFt-Number(tank.length))>.001||Math.abs(dims.widthFt-Number(tank.width))>.001||Math.abs(dims.heightFt-Number(tank.height))>.001)return null;return {store,drawing,dimensions:dims}}
+function winkoGridNodeKey(position,mount='node',face='internal'){return `${Number(position.x)}|${Number(position.y)}|${Number(position.z)}|${mount}|${face}`}
+function winkoPanelGrid(tank){const columns=Math.round(Number(tank.lp)||0),rows=Math.round(Number(tank.wp)||0),levels=Math.round(Number(tank.hp)||0),nodes=[];for(let x=0;x<=columns;x++)for(let y=0;y<=rows;y++)for(let z=0;z<=levels;z++)nodes.push({x,y,z,key:`${x}|${y}|${z}`});return {columns,rows,levels,nodes}}
+function winkoStayParts(value){const bits=String(value??'').split('#');return {primary:bits[0]||'corner',mode:bits[1]||'',secondary:bits[2]||''}}
+function winkoPoint(value,fallbackZ=0){if(Array.isArray(value))return {x:Number(value[0])||0,y:Number(value[1])||0,z:Number(value[2]??fallbackZ)||0};return {x:Number(value?.x)||0,y:Number(value?.y)||0,z:Number(value?.z??fallbackZ)||0}}
+function winkoClassifyStay(lengthFt,hint=''){const normalized=String(hint||'').toLowerCase();let hinted=WINKO_STAY_CATALOGUE.find(c=>c.aliases.some(a=>normalized.includes(String(a).toLowerCase()))),nearest=WINKO_STAY_CATALOGUE.slice().sort((a,b)=>Math.abs(a.lengthFt-lengthFt)-Math.abs(b.lengthFt-lengthFt))[0];if(hinted&&Math.abs(hinted.lengthFt-lengthFt)<=hinted.toleranceFt)return {...hinted,differenceFt:lengthFt-hinted.lengthFt,withinTolerance:true};if(nearest&&Math.abs(nearest.lengthFt-lengthFt)<=nearest.toleranceFt)return {...nearest,differenceFt:lengthFt-nearest.lengthFt,withinTolerance:true};return {id:'custom-review',label:'CUSTOM STAY — REVIEW',lengthFt,differenceFt:nearest?lengthFt-nearest.lengthFt:null,withinTolerance:false,nearest:nearest?.label||null}}
+function winkoStayMember(raw,tank,index){const start=winkoPoint(raw.start??raw.a,raw.level||0),end=winkoPoint(raw.end??raw.b,raw.level||0),dx=(end.x-start.x)*tank.panelSize,dy=(end.y-start.y)*tank.panelSize,dz=(end.z-start.z)*tank.panelSize,actualLengthFt=Math.sqrt(dx*dx+dy*dy+dz*dz),classification=winkoClassifyStay(actualLengthFt,raw.type||raw.profile||raw.label);return {id:String(raw.id||`stay-${index+1}`),level:Number(raw.level??start.z)||0,start:[start.x,start.y,start.z],end:[end.x,end.y,end.z],type:classification.id,catalogueLabel:classification.label,actualLengthFt,classification,double:!!raw.double,wallSide:raw.wallSide||null,floorBrace:!!raw.floorBrace,source2DStayId:raw.source2DStayId||raw.id||null,source:'2D Drawing Stay Schedule'}}
+function winkoDrawingStays(link,tank){if(!link)return [];const d=link.drawing,out=[];(d.levels||[]).forEach((level,levelIndex)=>{const levelZ=Number.isFinite(Number(level.ht))?Number(level.ht)/Number(tank.panelSize||4):levelIndex+1;Object.entries(level.stays||{}).forEach(([key,value],stayIndex)=>{const points=String(key).split('|').map(p=>p.split(',').map(Number));if(points.length!==2)return;const parsed=winkoStayParts(value),types=[parsed.primary];if(parsed.mode==='d')types.push(parsed.secondary||parsed.primary);types.forEach((type,memberIndex)=>out.push(winkoStayMember({id:`${level.id||levelIndex+1}:${key}:${memberIndex+1}`,level:levelIndex+1,a:[points[0][0],points[0][1],points[0][2]??levelZ],b:[points[1][0],points[1][1],points[1][2]??levelZ],type,double:types.length>1,source2DStayId:`${level.id||levelIndex+1}:${key}`},tank,out.length)))});});const studioStays=d.studio?.stays3d||d.studio?.stays||d.stays3d||[];studioStays.forEach((stay,index)=>{if(stay?.a&&stay?.b&&!out.some(row=>String(row.source2DStayId)===String(stay.source2DStayId||stay.id)))out.push(winkoStayMember({...stay,start:stay.a,end:stay.b,type:stay.stayType||stay.t||stay.type,level:stay.level||stay.lvl||0},tank,out.length))});return out}
+function winkoCleatFace(x,y,grid){if(x===0)return 'W';if(x===grid.columns)return 'E';if(y===0)return 'N';if(y===grid.rows)return 'S';return 'internal'}
+function winkoCleatNode(type,position,grid,extra={}){const face=extra.face||winkoCleatFace(position.x,position.y,grid),mount=extra.mount||'panel-joint',nodeKey=winkoGridNodeKey(position,mount,face);return {id:`cleat-${type}-${nodeKey}`,nodeKey,position:{...position},type,mount,face,zone:extra.zone||'tank',connectedStayIds:Array.from(new Set(extra.connectedStayIds||[]))}}
+function winkoGenerateCleats(grid,stays,partitions=[]){const map=new Map(),add=cleat=>{const key=`${cleat.type}|${cleat.nodeKey}`;const old=map.get(key);if(old){old.connectedStayIds=Array.from(new Set([...old.connectedStayIds,...cleat.connectedStayIds]));return old}map.set(key,cleat);return cleat};for(let y=1;y<grid.rows;y++){add(winkoCleatNode('A',{x:0,y,z:grid.levels},grid,{mount:'top-perimeter',zone:'top'}));add(winkoCleatNode('A',{x:grid.columns,y,z:grid.levels},grid,{mount:'top-perimeter',zone:'top'}))}for(let x=0;x<=grid.columns;x++)for(let y=0;y<=grid.rows;y++){const corner=(x===0||x===grid.columns)&&(y===0||y===grid.rows);if(!corner)add(winkoCleatNode('B',{x,y,z:0},grid,{mount:'base-joint',zone:'base'}))}for(let x=1;x<grid.columns;x++){add(winkoCleatNode('C',{x,y:0,z:0},grid,{mount:'floor-wall',zone:'floor-wall'}));add(winkoCleatNode('C',{x,y:grid.rows,z:0},grid,{mount:'floor-wall',zone:'floor-wall'}))}for(let y=1;y<grid.rows;y++){add(winkoCleatNode('C',{x:0,y,z:0},grid,{mount:'floor-wall',zone:'floor-wall'}));add(winkoCleatNode('C',{x:grid.columns,y,z:0},grid,{mount:'floor-wall',zone:'floor-wall'}))}for(let z=1;z<grid.levels;z++)[[0,0],[grid.columns,0],[0,grid.rows],[grid.columns,grid.rows]].forEach(([x,y])=>add(winkoCleatNode('C',{x,y,z},grid,{mount:'wall-corner',zone:'wall-corner'})));stays.forEach(stay=>[['start',stay.start],['end',stay.end]].forEach(([end,point])=>{const position={x:Number(point[0]),y:Number(point[1]),z:Number(point[2])};add(winkoCleatNode('B',position,grid,{mount:position.z===0?'floor':'stay-connection',zone:'stay',connectedStayIds:[stay.id],face:winkoCleatFace(position.x,position.y,grid)}))}));partitions.forEach((partition,index)=>{const placement=partition.placement||partition,dir=placement.dir||partition.orientation,at=Number(placement.at),from=Number(placement.from??0),to=Number(placement.to??(dir==='h'?grid.columns:grid.rows));if(!Number.isFinite(at)||!['h','v','horizontal','vertical'].includes(String(dir)))return;const horizontal=dir==='h'||dir==='horizontal',limit=Math.max(0,Math.round(to-from));for(let i=0;i<=limit;i++)for(let z=0;z<=grid.levels;z++){const position=horizontal?{x:from+i,y:at,z}:{x:at,y:from+i,z};add(winkoCleatNode('D',position,grid,{mount:'partition-joint',zone:`partition-${partition.id||index+1}`}))}});return [...map.values()]}
+function winkoRoofMembers(link,tank){if(!link)return {trusses:[],supports:[]};const d=link.drawing,s=d.studio||{},normalize=(row,index,type)=>{const start=winkoPoint(row.start??row.a),end=winkoPoint(row.end??row.b),lengthFt=Number(row.lengthFt)||Math.hypot((end.x-start.x)*tank.panelSize,(end.y-start.y)*tank.panelSize,(end.z-start.z)*tank.panelSize);return {id:String(row.id||`${type}-${index+1}`),start:[start.x,start.y,start.z],end:[end.x,end.y,end.z],lengthFt,level:Number(row.level??tank.hp)||tank.hp,type,source:'Engineering Drawing Placement'}};const trusses=(s.roofTrusses||s.roofMembers||d.roofTrusses||d.roofMembers||[]).filter(x=>/truss|roof_truss/i.test(String(x.type||x.name||'truss'))).map((x,i)=>normalize(x,i,'roof_truss')),supports=(s.roofSupports||d.roofSupports||[]).map((x,i)=>normalize(x,i,'roof_support'));return {trusses,supports}}
+function winkoPlacementPartitions(tank,link){
+ const local=Array.isArray(tank.partitions)?tank.partitions:[];
+ if(!link?.drawing)return local;
+ const d=link.drawing,g=d.geometry||{};
+ const drawingRows=[d.partitions,g.partitions,d.panelLayout?.partitions,d.layout?.partitions].find(Array.isArray)||[];
+ if(!drawingRows.length)return local;
+ return drawingRows.map((row,index)=>{
+  const dir=String(row.dir||row.orientation||'').toLowerCase();
+  const placement={dir:dir.startsWith('h')?'h':dir.startsWith('v')?'v':dir,at:Number(row.at??row.position??row.gridLine),from:Number(row.from??row.start??0),to:Number(row.to??row.end??(dir.startsWith('h')?tank.lp:tank.wp))};
+  return {...row,id:row.id||`drawing-partition-${index+1}`,placement,source:'2D Drawing Partition Placement'};
+ });
+}
+function winkoBuildPlacementEngine(tank){
+ const grid=winkoPanelGrid(tank),link=winkoResolveEngineeringDrawing(tank),stays=winkoDrawingStays(link,tank),partitions=winkoPlacementPartitions(tank,link),cleats=winkoGenerateCleats(grid,stays,partitions),roof=winkoRoofMembers(link,tank),cleatCounts={A:0,B:0,C:0,D:0};
+ cleats.forEach(c=>{cleatCounts[c.type]=(cleatCounts[c.type]||0)+1});
+ const staySchedule={};stays.forEach(stay=>{const key=stay.catalogueLabel;staySchedule[key]=(staySchedule[key]||0)+1});
+ const workbook=typeof getWorkbookCleatFormulaQuantities==='function'?getWorkbookCleatFormulaQuantities(grid.columns,grid.rows,grid.levels):null;
+ const crossChecks={cleatA:{placementQty:cleatCounts.A,workbookQty:workbook?.A??null},cleatB:{placementQty:cleatCounts.B,workbookQty:workbook?.B??null},cleatC:{placementQty:cleatCounts.C,workbookQty:workbook?.C??null},cleatC1:{placementQty:null,workbookQty:workbook?.C1??null},stayCount:{placementQty:stays.length,drawingQty:stays.length},roofTruss:{placementQty:roof.trusses.length||null,referenceQty:isExactReferenceTank(tank)?10:null},roofSupport:{placementQty:roof.supports.length||null,referenceQty:isExactReferenceTank(tank)?5:null}};
+ Object.values(crossChecks).forEach(check=>{const values=[check.placementQty,check.workbookQty,check.referenceQty,check.drawingQty].filter(v=>v!==null&&v!==undefined);check.difference=values.length>1?values[0]-values[1]:null;check.status=values.length>1?(values.every(v=>v===values[0])?'MATCH':'REVIEW'):'SINGLE SOURCE'});
+ return {drawingLinked:!!link,drawingId:link?.drawing?.id||null,drawingRevision:link?.drawing?.rev||link?.drawing?.revision||null,grid,partitions,stays,staySchedule,cleats,cleatCounts,roof,connections:{panelJoint:cleats.filter(c=>c.mount==='base-joint').length,wallJoint:cleats.filter(c=>c.mount==='floor-wall').length,cornerJoint:cleats.filter(c=>c.mount==='wall-corner').length,cleatA:cleatCounts.A,cleatB:cleatCounts.B,cleatC:cleatCounts.C,cleatD:cleatCounts.D,stayConnection:cleats.filter(c=>c.zone==='stay').length,roofConnection:roof.trusses.length+roof.supports.length,partitionConnection:cleatCounts.D},crossChecks,source:link?'2D/Studio Drawing Placement':'Geometry and validation sources only'};
+}
+function winkoPlacementQuantityForItem(item,placement){if(!placement?.drawingLinked)return null;const name=String(item||'');if(name==='Type (A) Cleat')return {quantity:placement.cleatCounts.A,source:'Actual Connection Nodes',status:placement.crossChecks.cleatA.status==='MATCH'?'DRAWING VERIFIED':'REVIEW REQUIRED',crossCheck:placement.crossChecks.cleatA};if(name==='Type (B) Cleat')return {quantity:placement.cleatCounts.B,source:'Actual Connection Nodes',status:placement.crossChecks.cleatB.status==='MATCH'?'DRAWING VERIFIED':'REVIEW REQUIRED',crossCheck:placement.crossChecks.cleatB};if(name==='Type (C) Cleat')return {quantity:placement.cleatCounts.C,source:'Actual Corner Nodes',status:placement.crossChecks.cleatC.status==='MATCH'?'DRAWING VERIFIED':'REVIEW REQUIRED',crossCheck:placement.crossChecks.cleatC};if(name==='Roof Trusses (12 ft)'&&placement.roof.trusses.length)return {quantity:placement.roof.trusses.length,source:'Actual Roof Member Placement',status:'DRAWING VERIFIED',crossCheck:placement.crossChecks.roofTruss};if(name==='8" Roof Support'&&placement.roof.supports.length)return {quantity:placement.roof.supports.length,source:'Actual Roof Support Placement',status:'DRAWING VERIFIED',crossCheck:placement.crossChecks.roofSupport};const catalogueMatch=name.includes('67 1/2')?'67½':name.includes('11-3/2')?'11′-3½':name.includes('44 1/2')?'44½':name.includes('67" Secondary')?'67" Secondary':name.includes('7 ft 10 1/4')?'7 ft 10¼':name.includes('11 ft 3 in')?'11 ft 3 in':null;if(catalogueMatch){const quantity=Object.entries(placement.staySchedule).filter(([label])=>label.includes(catalogueMatch)).reduce((sum,[,qty])=>sum+Number(qty||0),0);if(quantity)return {quantity,source:'2D Drawing Stay Schedule',status:'DRAWING VERIFIED',crossCheck:{placementQty:quantity,status:'DRAWING'}}}return null}
 
 function normalizeCurrency(code){
  const c=String(code||"MYR").toUpperCase();
@@ -2574,11 +2652,44 @@ function showTankCalculationWarning(message){
 
 
 
+/* Canonical partition model.  Legacy fields are still read for old quotations,
+   but all new calculations use one row per physical partition. */
+function winkoPartitionNumber(value,fallback=0){
+ const n=Number(value);return Number.isFinite(n)?n:fallback;
+}
+function winkoNormalizePartition(raw={},index=0,defaultUnit="ft"){
+ const unit=String(raw.dimensionUnit||raw.partitionUnit||defaultUnit).toLowerCase()==="m"?"m":"ft";
+ const toFt=value=>unit==="m"&&typeof toFeet==="function"?toFeet(winkoPartitionNumber(value),"m"):winkoPartitionNumber(value);
+ const lengthFt=raw.lengthFt!=null?winkoPartitionNumber(raw.lengthFt):toFt(raw.length);
+ const widthFt=raw.widthFt!=null?winkoPartitionNumber(raw.widthFt):toFt(raw.width);
+ const length=raw.length!=null?winkoPartitionNumber(raw.length):(unit==="m"&&typeof fromFeet==="function"?fromFeet(lengthFt,"m"):lengthFt);
+ const width=raw.width!=null?winkoPartitionNumber(raw.width):(unit==="m"&&typeof fromFeet==="function"?fromFeet(widthFt,"m"):widthFt);
+ return { ...raw,id:String(raw.id||`partition-${index+1}`),length,width,dimensionUnit:unit,lengthFt,widthFt,thickness:raw.thickness==null?null:winkoPartitionNumber(raw.thickness) };
+}
+function winkoNormalizePartitions(input={},defaultUnit="ft"){
+ if(Array.isArray(input.partitions))return input.partitions.map((p,i)=>winkoNormalizePartition(p,i,defaultUnit));
+ const required=String(input.partitionRequired||"").toLowerCase()==="yes";
+ const qty=Math.max(0,Math.floor(winkoPartitionNumber(input.partitionQty)));
+ const length=winkoPartitionNumber(input.partitionLength),width=winkoPartitionNumber(input.partitionWidth);
+ if(!required||qty<1||length<=0||width<=0)return [];
+ const unit=input.partitionUnit||input.dimensionUnit||defaultUnit;
+ return Array.from({length:qty},(_,i)=>winkoNormalizePartition({id:`partition-${i+1}`,length,width,dimensionUnit:unit,thickness:input.partitionThickness},i,unit));
+}
+function winkoPartitionSignature(partitions){
+ return winkoNormalizePartitions({partitions:Array.isArray(partitions)?partitions:[]}).map(p=>[p.id,p.lengthFt,p.widthFt,p.thickness]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
+}
+function winkoCurrentPartitionRows(){
+ const getter=window.winkoGetCurrentPartitions;
+ if(typeof getter==="function"){
+  try{return winkoNormalizePartitions({partitions:getter()});}catch(e){console.warn("Unable to read partition rows",e)}
+ }
+ const unit=document.getElementById("dimensionUnit")?.value||"ft";
+ return winkoNormalizePartitions({partitionRequired:document.getElementById("partitionRequired")?.value,partitionQty:document.getElementById("partitionQty")?.value,partitionLength:document.getElementById("partitionLength")?.value,partitionWidth:document.getElementById("partitionWidth")?.value,partitionUnit:unit,dimensionUnit:unit},unit);
+}
 function partitionSetQty(){
  const t=window.__activeTankForAccessory;
- if(t)return t.partitionRequired==="yes"?Math.max(Number(t.partitionQty)||0,0):0;
- return document.getElementById("partitionRequired")?.value==="yes"
-   ?Math.max(n("partitionQty"),0):0;
+ if(t)return winkoNormalizePartitions(t,t.dimensionUnit||"ft").length;
+ return winkoCurrentPartitionRows().length;
 }
 function updatePartitionUi(){
  const required=document.getElementById("partitionRequired")?.value==="yes";
@@ -2659,6 +2770,14 @@ function validateTankInput(showMessage=true){
    const ratio=value/s.panelSize;
    if(Math.abs(ratio-Math.round(ratio))>0.00001)errors.push(`${name} must be a multiple of ${s.panelSize} ft for the original BOM formula.`);
  });
+ const partitions=winkoCurrentPartitionRows();
+ partitions.forEach((p,index)=>{
+   if(p.length<=0||p.width<=0)errors.push(`Partition ${index+1}: length and width must be greater than zero.`);
+   if(s.panelSize>0&&Math.abs(p.lengthFt/s.panelSize-Math.round(p.lengthFt/s.panelSize))>0.00001)errors.push(`Partition ${index+1}: length must be a multiple of ${s.panelSize} ft.`);
+   if(s.panelSize>0&&Math.abs(p.widthFt/s.panelSize-Math.round(p.widthFt/s.panelSize))>0.00001)errors.push(`Partition ${index+1}: width must be a multiple of ${s.panelSize} ft.`);
+   if(p.lengthFt>Math.max(s.length,s.width)+0.00001)errors.push(`Partition ${index+1}: length exceeds the tank footprint.`);
+   if(p.widthFt>s.height+0.00001)errors.push(`Partition ${index+1}: width/height exceeds the tank height.`);
+ });
  const box=document.getElementById("tankValidation");
  if(box){
    box.textContent=errors.length?errors[0]:"Original BOM panel grid is valid.";
@@ -2679,6 +2798,7 @@ function calculate(){
  window.__winkoTankCalculationBlocked=!!heightError;
  if(heightError){
    showTankCalculationWarning(heightError);
+   ["partitionPanelTotal","compartmentCount"].forEach(id=>{const node=document.getElementById(id);if(node)node.textContent="—"});
    ["lp","wp","hp","roofPanelCount","basePanelCount","wallPanelTotal","tp","volume"].forEach(id=>{const node=document.getElementById(id);if(node)node.textContent="—"});
    const statusEl=document.getElementById("bomApprovalStatus");if(statusEl){statusEl.textContent="UNSUPPORTED HEIGHT";statusEl.style.fontWeight="700"}
    const countEl=document.getElementById("criticalUnverifiedCount");if(countEl)countEl.textContent="—";
@@ -2696,15 +2816,18 @@ function calculate(){
  document.getElementById("wp").textContent=s.wp;
  document.getElementById("hp").textContent=s.hp;
  updateWallLevelVisibility();
+ const canonical=window.WinkoCalculator?.calculateTankResult?.(currentTankSnapshot?.()||s),geometry=canonical?.geometry||{};
  const levelsNow=activeWallLevels(s.height);
- const perLevel=2*(s.lp+s.wp);
- const wallTotal=perLevel*levelsNow.count;
- const roofPanels=Math.max(s.lp*s.wp-s.manhole,0);
- const basePanels=s.lp*s.wp;
+ const perLevel=Number(geometry.externalPanelsPerLevel)||2*(s.lp+s.wp);
+ const wallTotal=Number(geometry.externalWallPanels)||perLevel*levelsNow.count;
+ const roofPanels=Number.isFinite(Number(geometry.roofPanels))?Number(geometry.roofPanels):Math.max(s.lp*s.wp-s.manhole,0);
+ const basePanels=Number.isFinite(Number(geometry.basePanels))?Number(geometry.basePanels):s.lp*s.wp;
  document.getElementById("roofPanelCount").textContent=roofPanels;
  document.getElementById("basePanelCount").textContent=basePanels;
  document.getElementById("wallPanelTotal").textContent=wallTotal;
- document.getElementById("tp").textContent=roofPanels+basePanels+wallTotal+s.manhole;
+ document.getElementById("partitionPanelTotal").textContent=Number(geometry.totalPartitionPanels)||0;
+ document.getElementById("compartmentCount").textContent=Number(geometry.compartmentCount)||1;
+ document.getElementById("tp").textContent=Number.isFinite(Number(geometry.totalSteelPanels))?geometry.totalSteelPanels:(basePanels+wallTotal);
  const approval=productionApprovalState(s);
  const statusEl=document.getElementById("bomApprovalStatus");
  const countEl=document.getElementById("criticalUnverifiedCount");
@@ -2743,11 +2866,14 @@ function renderSalesBom(safeItems){
  if(before)before.textContent=document.getElementById('qBeforeTax')?.textContent||'RM 0.00';if(tax)tax.textContent=document.getElementById('qTax')?.textContent||'RM 0.00';if(total)total.textContent=document.getElementById('qFinal')?.textContent||'RM 0.00';
 }
 function renderRows(s){
+ const canonical=window.WinkoCalculator?.calculateTankResult?.(currentTankSnapshot?.()||s),canonicalBom=canonical?.bom||[];
  if(isSalesRole()){
-   const material=items.reduce((sum,x)=>sum+(x.include?itemQuantity(x,s)*(Number(x.price)||0):0),0);
-   quotationTotal(material);renderSalesBom(createSalesSafeBom(items,s));return;
+   const material=canonical?.costs?.materialUnit??items.reduce((sum,x)=>sum+(x.include?itemQuantity(x,s)*(Number(x.price)||0):0),0);
+   const salesVisible=/manhole|ladder|safety cage|air-vents|water level indicator|internal partition/i;
+   quotationTotal(material);renderSalesBom(canonicalBom.filter(x=>x.include!==false&&salesVisible.test(String(x.item))).map(x=>({itemName:x.item,quantity:Number(x.quantity)||0})).filter(x=>x.quantity>0));return;
  }
  if(typeof window.winkoRenderMainBomSimple==='function')window.winkoRenderMainBomSimple(s);else renderMainBom(s);
+ const body=document.getElementById('bomBody');if(body&&canonicalBom.length){canonicalBom.filter(x=>/^partition-/.test(String(x.id))&&Number(x.quantity)>0).forEach(row=>{const tr=document.createElement('tr');tr.innerHTML=`<td><span class="badge">Geometry Verified</span></td><td><span class="bom-source formula">Partition Geometry</span></td><td>Panels</td><td>${escapeHtml(row.item)}</td><td>pcs</td><td class="qty">${Number(row.quantity).toLocaleString(undefined,{maximumFractionDigits:2})}</td><td class="qty">${Number(row.quantity).toLocaleString(undefined,{maximumFractionDigits:2})}</td><td class="qty">0</td><td>—</td><td>0</td><td class="money">RM 0.00</td><td>Partition L × W</td><td>Auto</td>`;body.appendChild(tr)})}
 }
 function renderMainBom(s){
  const body=document.getElementById("bomBody");if(!body)return;body.innerHTML="";
@@ -2818,14 +2944,18 @@ function setQty(i,v){
  const value=Math.max(Number(v)||0,0);
  items[i].manualQty=value;
  if(!items[i].overrideReason)items[i].overrideReason="";
+ items[i].overrideBy=(document.getElementById('preparedBy')?.value||window.WinkoAccess?.user?.email||window.WinkoAccess?.user?.username||getWinkoRole?.()||'main').trim?.()||'main';
+ items[i].overrideAt=new Date().toISOString();
  invalidateProductionApproval();
  calculate();
 }
-function setOverrideReason(i,v){if(!requireMainPermission('Editing BOM override reasons'))return false;items[i].overrideReason=String(v||"").trim();invalidateProductionApproval();saveData(false);updateProductionApprovalUI(state())}
+function setOverrideReason(i,v){if(!requireMainPermission('Editing BOM override reasons'))return false;items[i].overrideReason=String(v||"").trim();items[i].overrideBy=items[i].overrideBy||(document.getElementById('preparedBy')?.value||window.WinkoAccess?.user?.email||getWinkoRole?.()||'main');items[i].overrideAt=new Date().toISOString();invalidateProductionApproval();saveData(false);updateProductionApprovalUI(state())}
 function resetQty(i){
  if(!requireMainPermission('Resetting BOM quantity'))return false;
  items[i].manualQty=null;
  items[i].overrideReason="";
+ items[i].overrideBy="";
+ items[i].overrideAt="";
  invalidateProductionApproval();
  calculate();
 }
@@ -2837,8 +2967,8 @@ function addCustomItem(){
  calculate();
 }
 const BOM_APPROVAL_INPUTS=new Set(['length','width','height','panelSize','tankQty','manhole','roofThickness','wallL1Thickness','wallL2Thickness','wallL3Thickness','wallL4Thickness','baseThickness','extLadderRequired','extLadderQty','intLadderRequired','intLadderQty','safetyCageRequired','safetyCageQty','airVentRequired','airVentQty','wliRequired','wliQty','manholeAccessoryQty','partitionRequired','partitionType','partitionLength','partitionWidth','partitionQty']);
-document.addEventListener('input',event=>{if(BOM_APPROVAL_INPUTS.has(event.target?.id))invalidateProductionApproval()},{passive:true});
-document.addEventListener('change',event=>{if(BOM_APPROVAL_INPUTS.has(event.target?.id))invalidateProductionApproval()},{passive:true});
+document.addEventListener('input',event=>{if(BOM_APPROVAL_INPUTS.has(event.target?.id)||event.target?.matches?.('[data-partition-field]'))invalidateProductionApproval()},{passive:true});
+document.addEventListener('change',event=>{if(BOM_APPROVAL_INPUTS.has(event.target?.id)||event.target?.matches?.('[data-partition-field]'))invalidateProductionApproval()},{passive:true});
 
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
 
@@ -2874,6 +3004,7 @@ function saveData(show=true){
   partitionLength:document.getElementById("partitionLength").value,
   partitionWidth:document.getElementById("partitionWidth").value,
   partitionQty:document.getElementById("partitionQty").value,
+  partitions:winkoCurrentPartitionRows(),
   project:document.getElementById("project").value,
   reference:document.getElementById("reference").value,preparedBy:document.getElementById("preparedBy").value,
   bomDate:document.getElementById("bomDate").value,currency:document.getElementById("currency").value,
@@ -2894,6 +3025,8 @@ function loadData(){
  try{
   const d=JSON.parse(raw);
   Object.entries(d.inputs||{}).forEach(([k,v])=>{const el=document.getElementById(k);if(el)el.value=v});
+  const savedPartitions=Array.isArray(d.inputs?.partitions)?d.inputs.partitions:winkoNormalizePartitions(d.inputs||{},d.inputs?.dimensionUnit||"ft");
+  if(typeof window.winkoSetCurrentPartitions==="function")window.winkoSetCurrentPartitions(savedPartitions,d.inputs?.dimensionUnit||"ft");
   if(Array.isArray(d.items)){
     items=d.items.map((saved,i)=>{
       const def=defaultItems[i];
@@ -2915,7 +3048,8 @@ function resetSystem(){
 function factoryBomRowsForCurrentTank(){
  const s=state();
  const tankQty=Math.max(n("tankQty"),1);
- return items.map(x=>({x,qty:itemQuantity(x,s),status:quantityStatus(x,s),source:quantitySourceInfo(x,s).label}))
+ const canonical=window.WinkoCalculator?.calculateTankResult?.(currentTankSnapshot?.()||s),rows=canonical?.bom||[];
+ return rows.map(row=>{const x=items.find(item=>(item.id||'')===row.id)||{id:row.id,item:row.item,cat:row.category,unit:'pcs',price:row.unitPrice,include:row.included};return {x,qty:row.quantity,status:row.status,source:row.source,row}})
   .filter(r=>r.x.include!==false && Number(r.qty)>0)
   .map(r=>({...r,total:Number(r.qty)*tankQty}));
 }
@@ -2999,7 +3133,7 @@ function exportProductionBomLegacy(){
 function exportCSV(){
  if(!requireMainPermission('Production BOM export'))return false;
  if(!requireSupportedTankHeights('exporting the production BOM'))return false;
- const s=state(),tankQty=Math.max(n('tankQty'),1),rows=[['BILL OF MATERIALS'],['Reference',document.getElementById('reference').value||''],['Project',document.getElementById('project').value||''],['Tank',tankDisplaySize(currentTankSnapshot())],['Tank Quantity',tankQty],[],['Item Name','Qty']];items.forEach(x=>{const qty=itemQuantity(x,s);if(x.include!==false&&Number(qty)>0)rows.push([x.item,Number(qty)*tankQty])});const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\n'),blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(document.getElementById('reference').value||'Production_BOM')+'_Production_BOM.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),0);return true;
+ const tankQty=Math.max(n('tankQty'),1),rows=[['BILL OF MATERIALS'],['Reference',document.getElementById('reference').value||''],['Project',document.getElementById('project').value||''],['Tank',tankDisplaySize(currentTankSnapshot())],['Tank Quantity',tankQty],[],['Item Name','Qty','Source','Status']];factoryBomRowsForCurrentTank().forEach(r=>rows.push([r.x.item,Number(r.qty)*tankQty,r.source,r.status]));const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\n'),blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(document.getElementById('reference').value||'Production_BOM')+'_Production_BOM.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),0);return true;
 }
 
 function exportBOMWithPrice(){
@@ -3559,6 +3693,8 @@ function isVerifiedQuantity(x,s){
  if(ref && Object.prototype.hasOwnProperty.call(ref,x.item))return true;
  const stay=stayLayoutFor(s);
  if(stay && stay.items && Object.prototype.hasOwnProperty.call(stay.items,x.item))return true;
+ const workbook=workbookFormulaQuantity(x,s);
+ if(workbook!==null)return true;
  return x.cat==="Panels" && !!x.formula;
 }
 function isCriticalUnverified(x,s){
@@ -3566,6 +3702,7 @@ function isCriticalUnverified(x,s){
 }
 function productionApprovalState(s){
  const pending=items.filter(x=>x.include!==false && isCriticalUnverified(x,s));
+ try{const result=window.WinkoCalculator?.calculateTankResult?.(currentTankSnapshot?.()||s);if(result?.verification?.panelReconciliationOk===false)pending.push({item:'Panel reconciliation',reason:'CRITICAL PANEL RECONCILIATION ERROR'});if(result?.verification?.accessoryReconciliationOk===false)pending.push({item:'Accessory reconciliation',reason:'Automatic accessory quantity does not match its compartment suggestion.'});if(result?.verification?.fastenerReconciliation?.m14WasherMatches===false)pending.push({item:'M14 washer reconciliation',reason:'M14 washer quantity must equal M14 bolt quantity.'});if(result?.verification?.fastenerReconciliation?.m16MatchesApprovedRelation===false)pending.push({item:'M16/BNW reconciliation',reason:'M16 quantity must equal two times the BNW quantity under the approved rule.'});if(result?.verification?.cleatReconciliationOk===false)pending.push({item:'Cleat placement reconciliation',reason:'Cleat BOM quantities do not match unique engineering connection nodes.'});if(result?.verification?.stayReconciliationOk===false)pending.push({item:'Stay schedule reconciliation',reason:'Stay BOM quantities do not match the linked drawing schedule.'});if(result?.verification?.roofReconciliationOk===false)pending.push({item:'Roof member reconciliation',reason:'Roof truss/support quantities do not match actual placements.'});if(result?.verification?.referenceStayRegression?.pass===false)pending.push({item:'24 × 24 × 8 engineering regression',reason:'Reference stay/truss/support quantities do not match the verified benchmark.'});if(result?.errors?.length)result.errors.forEach(error=>pending.push({item:error,reason:error}))}catch(e){console.warn('Production reconciliation check unavailable',e)}
  return {approved:pending.length===0,pending};
 }
 
@@ -3578,6 +3715,7 @@ function automaticItemQuantity(x,s){
  if(stay && stay.items && Object.prototype.hasOwnProperty.call(stay.items,x.item))return Number(stay.items[x.item])||0;
  const workbookQty=workbookFormulaQuantity(x,s);
  if(workbookQty!==null)return Number(workbookQty)||0;
+ if(x.formula && !['11-3/2"','44 1/2" Main Diagonal','67" Secondary Stay','7 ft 10 1/4 in Short Tie','11 ft 3 in Custom Stay'].includes(x.item))return Number(x.formula(s))||0;
  if(CRITICAL_STRUCTURAL_ITEMS.has(x.item)){
    const scaled=scaledReferenceQuantity(x,s);
    return scaled===null?0:scaled;
@@ -3592,17 +3730,21 @@ function quantitySourceInfo(x,s){
  if(stay && stay.items && Object.prototype.hasOwnProperty.call(stay.items,x.item))return {label:"Verified Stay Layout",kind:"verified"};
  if(workbookFormulaQuantity(x,s)!==null)return {label:"8' BOM.xlsx Formula",kind:"formula"};
  if(x.cat==="Panels" && x.formula)return {label:"Geometry Formula",kind:"formula"};
+ const factoryReferenceItems=new Set(["Roof Trusses (12 ft)",'8" Roof Support',"M14x30 BN","M14 washer",'5/8 x 1½ BNW',"3/8 x 3/4 BN (set)","5x45x10m Sealant Roll","3x40x10m Sealant Roll","8mm Butyl Sealant","24mm Butyl Sealant","M16 x40mm B.N.W (set)","Ladder Brackets"]);
+ if(factoryReferenceItems.has(x.item))return {label:"Factory Reference",kind:"reference"};
  if(CRITICAL_STRUCTURAL_ITEMS.has(x.item) && scaledReferenceQuantity(x,s)!==null)return {label:"24×24×8 Scaling",kind:"scaled"};
  if(x.custom)return {label:"Manual Item",kind:"manual"};
  if(x.formula)return {label:"Estimate Formula",kind:"scaled"};
  return {label:"No Source",kind:"scaled"};
 }
 function bomApprovalFingerprint(s){
+ const engineering=winkoBuildPlacementEngine(s);
  return JSON.stringify({
    size:[s.length,s.width,s.height,s.panelSize],
    manhole:s.manhole,
-   tanks:(typeof quoteTanks!=='undefined'&&Array.isArray(quoteTanks)?quoteTanks:[]).map(t=>[t.id,t.length,t.width,t.height,t.panelSize,t.qty,t.extLadderRequired,t.extLadderQty,t.intLadderRequired,t.intLadderQty,t.safetyCageRequired,t.safetyCageQty,t.airVentRequired,t.airVentQty,t.wliRequired,t.wliQty,t.partitionRequired,t.partitionLength,t.partitionWidth,t.partitionQty]),
-   items:items.map(x=>[x.id,x.item,x.include!==false,itemQuantity(x,s),x.manualQty,x.overrideReason||""])
+   tanks:(typeof quoteTanks!=='undefined'&&Array.isArray(quoteTanks)?quoteTanks:[]).map(t=>[t.id,t.length,t.width,t.height,t.panelSize,t.qty,t.extLadderRequired,t.extLadderQty,t.intLadderRequired,t.intLadderQty,t.safetyCageRequired,t.safetyCageQty,t.airVentRequired,t.airVentQty,t.wliRequired,t.wliQty,t.partitionRequired,t.partitionLength,t.partitionWidth,t.partitionQty,winkoPartitionSignature(t.partitions||winkoNormalizePartitions(t))]),
+   engineering:{drawingId:engineering.drawingId,drawingRevision:engineering.drawingRevision,stays:engineering.stays.map(x=>[x.id,x.level,x.start,x.end,x.type,x.double]),cleats:engineering.cleats.map(x=>[x.nodeKey,x.type,x.mount,x.face,x.connectedStayIds]),roofTrusses:engineering.roof.trusses.map(x=>[x.id,x.start,x.end,x.lengthFt]),roofSupports:engineering.roof.supports.map(x=>[x.id,x.start,x.end,x.lengthFt])},
+   items:items.map(x=>[x.id,x.item,x.include!==false,itemQuantity(x,s),x.manualQty,x.overrideReason||"",x.overrideBy||"",x.overrideAt||""])
  });
 }
 function getProductionApproval(){
@@ -3666,12 +3808,17 @@ function updateProductionApprovalUI(s){
 }
 function quantityStatus(x,s){
  if(x.manualQty!==null && x.manualQty!==undefined && x.manualQty!=="") return "Manual Override";
- if(isVerifiedQuantity(x,s)){
-   if(x.cat==="Panels")return "Geometric Verified";
-   return "Verified";
- }
+ if(verifiedReferenceFor(s)&&Object.prototype.hasOwnProperty.call(verifiedReferenceFor(s),x.item))return "FACTORY VERIFIED";
+ const stay=stayLayoutFor(s);if(stay?.items&&Object.prototype.hasOwnProperty.call(stay.items,x.item))return "DRAWING VERIFIED";
  const workbookQty=workbookFormulaQuantity(x,s);
- if(workbookQty!==null)return "Workbook Formula (8' BOM.xlsx)";
+ if(workbookQty!==null)return x.item==="Type (C1) Cleat"?"PRODUCTION REVIEW":"WORKBOOK VERIFIED";
+ if(x.cat==="Panels"&&x.formula)return "GEOMETRY VERIFIED";
+ if(x.item==="M14x30 BN"||x.item==="M14 washer")return "FACTORY VALIDATION REQUIRED";
+ if(x.item==="M16 x40mm B.N.W (set)")return "LEGACY FORMULA — PRODUCTION REVIEW";
+ if(x.item==="3/8 x 3/4 BN (set)")return "FACTORY MATCHED";
+ if(x.item==="8mm Butyl Sealant")return "FORMULA UNDER REVIEW";
+ if(x.item==="24mm Butyl Sealant")return "FACTORY MATCHED CANDIDATE";
+ if(x.item==="Ladder Brackets")return "PRODUCTION REVIEW";
  if(CRITICAL_STRUCTURAL_ITEMS.has(x.item) && scaledReferenceQuantity(x,s)!==null)
    return "Scaled from 24×24×8";
  if(x.formula)return "Estimate Only";
@@ -3703,6 +3850,10 @@ let selectedPreset="install";
 
 function currentTankSnapshot(){
  const s=state();
+ const partitions=winkoCurrentPartitionRows();
+ const firstPartition=partitions[0]||null;
+ const legacyPartitionRequired=document.getElementById("partitionRequired")?.value|| (partitions.length?"yes":"no");
+ const legacyPartitionType=document.getElementById("partitionType")?.value||"Internal panel partition";
  return {
   id:"T"+Date.now()+Math.random().toString(16).slice(2),
   length:s.length,width:s.width,height:s.height,panelSize:s.panelSize,
@@ -3723,12 +3874,13 @@ function currentTankSnapshot(){
   wliRequired:document.getElementById("wliRequired").value,
   wliQty:n("wliQty"),
   manholeAccessoryQty:n("manholeAccessoryQty"),
-  partitionRequired:document.getElementById("partitionRequired").value,
-  partitionType:document.getElementById("partitionType")?.value||"Internal panel partition",
-  partitionLength:n("partitionLength"),
-  partitionWidth:n("partitionWidth"),
-  partitionUnit:s.unit,
-  partitionQty:n("partitionQty")
+  partitions,
+  partitionRequired:legacyPartitionRequired,
+  partitionType:legacyPartitionType,
+  partitionLength:firstPartition?firstPartition.length:(n("partitionLength")||0),
+  partitionWidth:firstPartition?firstPartition.width:(n("partitionWidth")||0),
+  partitionUnit:firstPartition?.dimensionUnit||s.unit,
+  partitionQty:partitions.length||n("partitionQty")||0
  };
 }
 
@@ -3753,7 +3905,8 @@ function addTankToQuote(){
    String(x.partitionType||"")===String(t.partitionType||"") &&
    sameNumber(x.partitionLength,t.partitionLength) && sameNumber(x.partitionWidth,t.partitionWidth) &&
    String(x.partitionUnit||x.dimensionUnit||"ft")===String(t.partitionUnit||t.dimensionUnit||"ft") &&
-   sameNumber(x.partitionQty,t.partitionQty)
+   sameNumber(x.partitionQty,t.partitionQty) &&
+   JSON.stringify(winkoPartitionSignature(x.partitions||winkoNormalizePartitions(x)))===JSON.stringify(winkoPartitionSignature(t.partitions||winkoNormalizePartitions(t)))
  );
  if(duplicate>=0)quoteTanks[duplicate].qty=Math.max(1,(Number(quoteTanks[duplicate].qty)||0)+(Number(t.qty)||1));
  else quoteTanks.push(t);
@@ -3795,6 +3948,14 @@ function useTank(i){
  document.getElementById("panelSize").value=t.displayPanelSize??fromFeet(t.panelSize,unit);
  ["manhole","tankQty","partitionRequired","partitionLength","partitionWidth","partitionQty","roofThickness","wallL1Thickness","wallL2Thickness","wallL3Thickness","wallL4Thickness","baseThickness"]
  .forEach(id=>{if(document.getElementById(id) && t[id]!==undefined)document.getElementById(id).value=t[id]});
+ const normalizedPartitions=winkoNormalizePartitions(t,unit);
+ if(typeof window.winkoSetCurrentPartitions==="function")window.winkoSetCurrentPartitions(normalizedPartitions,unit);
+ else if(normalizedPartitions[0]){
+  document.getElementById("partitionRequired").value="yes";
+  document.getElementById("partitionLength").value=normalizedPartitions[0].length;
+  document.getElementById("partitionWidth").value=normalizedPartitions[0].width;
+  document.getElementById("partitionQty").value=normalizedPartitions.length;
+ }
  calculate();
  showTab("design",document.querySelector(".tab-btn[onclick*=\'design\']"));
 }
@@ -3804,7 +3965,7 @@ function clearTankForm(){
  document.getElementById("width").value=unit==="m"?2.4384:8;
  document.getElementById("height").value=unit==="m"?2.4384:8;
  document.getElementById("panelSize").value=unit==="m"?1.2192:4;
- document.getElementById("tankQty").value=1;calculate();
+ document.getElementById("tankQty").value=1;window.winkoSetCurrentPartitions?.([],unit);calculate();
 }
 function renderTankList(){
  const el=document.getElementById("tankList");
@@ -4476,12 +4637,10 @@ function saveExtendedData(){
 function loadExtendedData(){
  try{
   const d=JSON.parse(localStorage.getItem("waterTankSalesWorkflowEditableClosingBoxedTitleFixed")||"{}");
-  quoteTanks=Array.isArray(d.quoteTanks)?d.quoteTanks.map(t=>({
-   ...t,
-   currency:normalizeCurrency(t.currency),
-   dimensionUnit:t.dimensionUnit==="m"?"m":"ft",
-   partitionUnit:t.partitionUnit==="m"?"m":"ft"
-  })):[];
+  quoteTanks=Array.isArray(d.quoteTanks)?d.quoteTanks.map(t=>{
+   const dimensionUnit=t.dimensionUnit==="m"?"m":"ft",partitions=winkoNormalizePartitions(t,dimensionUnit);
+   return {...t,currency:normalizeCurrency(t.currency),dimensionUnit,partitionUnit:t.partitionUnit==="m"?"m":dimensionUnit,partitions,partitionRequired:partitions.length?"yes":(t.partitionRequired||"no"),partitionQty:partitions.length||Number(t.partitionQty)||0,partitionLength:partitions[0]?.length ?? (Number(t.partitionLength)||0),partitionWidth:partitions[0]?.width ?? (Number(t.partitionWidth)||0)};
+  }):[];
   customerProjects=Array.isArray(d.customerProjects)?d.customerProjects:[];
   customerNotes=d.customerNotes&&typeof d.customerNotes==="object"?d.customerNotes:{};
   priceDatabase=d.priceDatabase||{};selectedPreset=d.selectedPreset||"install";
@@ -4751,7 +4910,7 @@ let compactProceedBusy=false;
 let compactAddedTankSignature='';
 function compactSyncTankFields(){
  const map={crmCustomer:'ceCustomer',crmAddress:'ceAddress',crmAttention:'ceAttention',crmTel:'ceTel',crmEmail:'ceEmail',crmProject:'ceProject',crmRef:'ceRef',crmDate:'ceDate',crmPreparedBy:'cePreparedBy',length:'ceLength',width:'ceWidth',height:'ceHeight',panelSize:'cePanelSize',tankQty:'ceTankQty',dimensionUnit:'ceUnit',extLadderRequired:'ceExtLadder',intLadderRequired:'ceIntLadder',airVentRequired:'ceAirVent',wliRequired:'ceWli',partitionRequired:'cePartition',partitionType:'cePartitionType',partitionQty:'cePartitionQty',partitionLength:'cePartitionLength',partitionWidth:'cePartitionWidth',extLadderQty:'ceExtLadderQty',intLadderQty:'ceIntLadderQty',airVentQty:'ceAirVentQty',wliQty:'ceWliQty'};
- Object.entries(map).forEach(([target,source])=>compactSet(target,source));syncCustomerToWorkingProject();return map;
+ Object.entries(map).forEach(([target,source])=>compactSet(target,source));if(typeof window.winkoSetCurrentPartitions==='function')window.winkoSetCurrentPartitions(window.winkoGetQuickPartitions?.()||[],document.getElementById('ceUnit')?.value||'ft');syncCustomerToWorkingProject();return map;
 }
 function compactTankSignature(){
  try{const t=currentTankSnapshot();const copy={...t};delete copy.qty;return JSON.stringify(copy)}catch(e){return ''}
@@ -4806,8 +4965,8 @@ function compactEntryReset(){
  ['ceCustomer','ceAddress','ceAttention','ceTel','ceEmail','ceProject','ceRef','cePreparedBy'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
  const d=document.getElementById('ceDate');if(d)d.value=new Date().toISOString().slice(0,10);
  [['ceLength','12'],['ceWidth','8'],['ceHeight','8'],['cePanelSize','4'],['ceTankQty','1'],['ceExtLadderQty','1'],['ceIntLadderQty','1'],['ceAirVentQty','1'],['ceWliQty','1'],['cePartitionQty','1'],['cePartitionLength','0'],['cePartitionWidth','0']].forEach(([id,v])=>{const e=document.getElementById(id);if(e)e.value=v;});
-  const box=document.getElementById('compactEntryError');if(box)box.classList.remove('show');
-  compactAddedTankSignature='';renderQuotationTankManager();renderQuotationExtraItemsEditor();window.winkoApplyQuotationDefaults?.();
+ const box=document.getElementById('compactEntryError');if(box)box.classList.remove('show');
+  compactAddedTankSignature='';window.winkoSetQuickPartitions?.([],document.getElementById('ceUnit')?.value||'ft');window.winkoSetCurrentPartitions?.([],document.getElementById('ceUnit')?.value||'ft');renderQuotationTankManager();renderQuotationExtraItemsEditor();window.winkoApplyQuotationDefaults?.();
 }
 document.addEventListener('DOMContentLoaded',()=>{const d=document.getElementById('ceDate');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);});
 
@@ -5399,7 +5558,7 @@ body[data-app-role="sales"] .sales-more-wording-btn{display:inline-flex}
    const fallbackTank=()=>{
      const inputs=snapshot?.inputs||{},unit=safe(inputValue(inputs,'dimensionUnit')||'ft')==='m'?'m':'ft';
      const toFt=v=>unit==='m'?Number(v||0)/0.3048:Number(v||0);
-     const t={id:'tank-1',length:toFt(inputValue(inputs,'length')),width:toFt(inputValue(inputs,'width')),height:toFt(inputValue(inputs,'height')),panelSize:Math.max(toFt(inputValue(inputs,'panelSize')),0.0001),dimensionUnit:unit,displayLength:Number(inputValue(inputs,'length'))||0,displayWidth:Number(inputValue(inputs,'width'))||0,displayHeight:Number(inputValue(inputs,'height'))||0,displayPanelSize:Number(inputValue(inputs,'panelSize'))||0,qty:Math.max(Number(inputValue(inputs,'tankQty'))||1,1)};
+     const t={id:'tank-1',length:toFt(inputValue(inputs,'length')),width:toFt(inputValue(inputs,'width')),height:toFt(inputValue(inputs,'height')),panelSize:Math.max(toFt(inputValue(inputs,'panelSize')),0.0001),dimensionUnit:unit,displayLength:Number(inputValue(inputs,'length'))||0,displayWidth:Number(inputValue(inputs,'width'))||0,displayHeight:Number(inputValue(inputs,'height'))||0,displayPanelSize:Number(inputValue(inputs,'panelSize'))||0,qty:Math.max(Number(inputValue(inputs,'tankQty'))||1,1),partitions:Array.isArray(inputs.partitions)?inputs.partitions:[]};
      ['manhole','roofThickness','wallL1Thickness','wallL2Thickness','wallL3Thickness','wallL4Thickness','baseThickness','extLadderRequired','extLadderQty','intLadderRequired','intLadderQty','safetyCageRequired','safetyCageQty','airVentRequired','airVentQty','wliRequired','wliQty','manholeAccessoryQty','partitionRequired','partitionType','partitionLength','partitionWidth','partitionQty'].forEach(key=>{const value=inputValue(inputs,key);t[key]=/Qty|Thickness|Length|Width|manhole$|partitionQty/i.test(key)?Number(value)||0:value});
      t.partitionUnit=unit;
      return t;
@@ -5948,7 +6107,7 @@ body[data-app-role="main"] #customers .main-approval-queue{display:block}
   function capture(){
    let extras=[];try{extras=deep(typeof quotationExtraItems!=='undefined'?quotationExtraItems:[])}catch(e){}
    let tanks=[];try{tanks=deep(typeof quoteTanks!=='undefined'?quoteTanks:[])}catch(e){}
-    return {version:1,ref:currentRef(),customer:currentCustomer(),project:currentProject(),inputs:fieldValues(inputIds),crm:fieldValues(crmIds),descriptions:fieldValues(descIds),quoteTanks:tanks,quotationExtraItems:extras,items:itemSnapshot(),selectedPreset:(typeof selectedPreset!=='undefined'?selectedPreset:null),capturedAt:new Date().toISOString()};
+    return {version:1,ref:currentRef(),customer:currentCustomer(),project:currentProject(),inputs:{...fieldValues(inputIds),partitions:deep(window.winkoGetCurrentPartitions?.()||[])},crm:fieldValues(crmIds),descriptions:fieldValues(descIds),quoteTanks:tanks,quotationExtraItems:extras,items:itemSnapshot(),selectedPreset:(typeof selectedPreset!=='undefined'?selectedPreset:null),capturedAt:new Date().toISOString()};
  }
  function canonicalFingerprintValue(value){
    if(Array.isArray(value))return value.map(canonicalFingerprintValue);
@@ -5972,6 +6131,7 @@ body[data-app-role="main"] #customers .main-approval-queue{display:block}
     if(!s)return;
     Object.entries(s.crm||{}).forEach(([id,v])=>{if(el(id))el(id).value=v});
     Object.entries(s.inputs||{}).forEach(([id,v])=>{if(el(id))el(id).value=v});
+    if(Array.isArray(s.inputs?.partitions)&&typeof window.winkoSetCurrentPartitions==='function')window.winkoSetCurrentPartitions(s.inputs.partitions,s.inputs.dimensionUnit||'ft');
    // Keep the compact Sales entry fields in lockstep with the restored
    // snapshot. Otherwise the freshly suggested reference can overwrite a
    // quotation opened from Main's queue during the next save/approval action.
@@ -5979,7 +6139,7 @@ body[data-app-role="main"] #customers .main-approval-queue{display:block}
    Object.entries(restored).forEach(([id,v])=>{if(v!=null&&el(id))el(id).value=v});
    const restoredRef=restored.ceRef;if(restoredRef){['crmRef','reference','qRefInput'].forEach(id=>{if(el(id))el(id).value=restoredRef})}
    Object.entries(s.descriptions||{}).forEach(([id,v])=>{if(el(id))el(id).value=v});
-   try{if(typeof quoteTanks!=='undefined')quoteTanks=deep(s.quoteTanks||[])}catch(e){}
+   try{if(typeof quoteTanks!=='undefined')quoteTanks=deep(s.quoteTanks||[]).map(t=>{const normalized=winkoNormalizePartitions(t,t.dimensionUnit||'ft');return {...t,partitions:normalized,partitionRequired:normalized.length?'yes':(t.partitionRequired||'no'),partitionQty:normalized.length||Number(t.partitionQty)||0,partitionLength:normalized[0]?.length ?? (Number(t.partitionLength)||0),partitionWidth:normalized[0]?.width ?? (Number(t.partitionWidth)||0)}})}catch(e){}
    try{if(typeof quotationExtraItems!=='undefined')quotationExtraItems=deep(s.quotationExtraItems||[])}catch(e){}
    try{if(typeof items!=='undefined'&&Array.isArray(s.items)){items=s.items.map((saved,i)=>{let formula=null;try{const d=typeof defaultItems!=='undefined'?defaultItems.find(x=>x.id===saved.id)||defaultItems[i]:null;formula=saved.custom?null:(d?d.formula:null)}catch(e){}return {...saved,formula}})}}catch(e){}
    try{if(s.selectedPreset&&typeof applyPreset==='function')applyPreset(s.selectedPreset)}catch(e){}
@@ -6573,16 +6733,49 @@ body[data-app-role="main"] #workflowTracker{display:block}
   const width=input.widthFt??(input.displayWidth!=null?convert(input.displayWidth):number(input.width));
   const height=input.heightFt??(input.displayHeight!=null?convert(input.displayHeight):number(input.height));
   const panelSize=input.panelSizeFt??(input.displayPanelSize!=null?convert(input.displayPanelSize):number(input.panelSize,4));
-  return {...deep(input),length,width,height,panelSize,manhole:number(input.manholeAccessoryQty??input.manhole),qty:Math.max(1,number(input.qty,1)),lp:panelSize?length/panelSize:0,wp:panelSize?width/panelSize:0,hp:panelSize?height/panelSize:0};
+  const partitions=winkoNormalizePartitions(input,unit).map((p,index)=>({...p,id:p.id||`partition-${index+1}`,lengthPanels:panelSize?p.lengthFt/panelSize:0,widthPanels:panelSize?p.widthFt/panelSize:0,panelCount:panelSize?(p.lengthFt/panelSize)*(p.widthFt/panelSize):0}));
+  const legacy=partitions[0];
+  const legacyPartitionReview=!Array.isArray(input.partitions)&&String(input.partitionRequired||'').toLowerCase()==='yes'&&!partitions.length;
+  return {...deep(input),length,width,height,panelSize,partitions,legacyPartitionReview,partitionRequired:partitions.length?"yes":(input.partitionRequired||"no"),partitionQty:partitions.length,partitionLength:legacy?.length??number(input.partitionLength),partitionWidth:legacy?.width??number(input.partitionWidth),manhole:number(input.manholeAccessoryQty??input.manhole),qty:Math.max(1,number(input.qty,1)),lp:panelSize?length/panelSize:0,wp:panelSize?width/panelSize:0,hp:panelSize?height/panelSize:0};
  }
+ function partitionGeometryFor(tank){
+  const errors=[],partitions=tank.partitions||[];
+  partitions.forEach((p,index)=>{
+   if(p.lengthFt<=0||p.widthFt<=0)errors.push(`Partition ${index+1}: length and width must be greater than zero.`);
+   if(tank.panelSize>0){
+    if(Math.abs(p.lengthPanels-Math.round(p.lengthPanels))>.00001)errors.push(`Partition ${index+1}: ${p.length} ${p.dimensionUnit} is not a multiple of the ${tank.panelSize} ft panel size.`);
+    if(Math.abs(p.widthPanels-Math.round(p.widthPanels))>.00001)errors.push(`Partition ${index+1}: ${p.width} ${p.dimensionUnit} is not a multiple of the ${tank.panelSize} ft panel size.`);
+   }
+   if(p.lengthFt>Math.max(tank.length,tank.width)+.00001)errors.push(`Partition ${index+1}: length exceeds the tank footprint.`);
+   if(p.widthFt>tank.height+.00001)errors.push(`Partition ${index+1}: width/height exceeds the tank height.`);
+  });
+  const totalPartitionPanels=partitions.reduce((sum,p)=>sum+(p.panelCount||0),0);
+  return {errors,partitions,totalPartitionPanels};
+ }
+ window.winkoNormalizeTankPartitions=winkoNormalizePartitions;
  function calculateTankResult(tankInput,options={}){
   const tank=normalizeTankInput(tankInput),errors=[];
+  const partitionGeometry=partitionGeometryFor(tank);
+  errors.push(...partitionGeometry.errors);
   if(tank.length<=0||tank.width<=0||tank.height<=0)errors.push('Length, width and height must be greater than zero.');
   if(tank.panelSize<=0)errors.push('Panel size must be greater than zero.');
   if(typeof isSupportedTankHeight==='function'&&!isSupportedTankHeight(tank.height))errors.push(typeof supportedTankHeightMessage==='function'?supportedTankHeightMessage():'Unsupported tank height.');
-  ['length','width','height'].forEach(key=>{const ratio=tank.panelSize?tank[key]/tank.panelSize:0;if(tank.panelSize&&Math.abs(ratio-Math.round(ratio))>.00001)errors.push(key+' must be a multiple of '+tank.panelSize+' ft.')});
-  const levels=typeof activeWallLevels==='function'?activeWallLevels(tank.height):{count:Math.min(4,Math.ceil(tank.height/4))};
-  const geometry={lengthFt:tank.length,widthFt:tank.width,heightFt:tank.height,panelSizeFt:tank.panelSize,lengthPanels:tank.lp,widthPanels:tank.wp,heightPanels:tank.hp,activeWallLevels:levels.count,roofPanels:Math.max(tank.lp*tank.wp-tank.manhole,0),basePanels:tank.lp*tank.wp,wallPanels:2*(tank.lp+tank.wp)*levels.count,volumeFt3:tank.length*tank.width*tank.height};
+  let gridMisaligned=false;['length','width','height'].forEach(key=>{const ratio=tank.panelSize?tank[key]/tank.panelSize:0;if(tank.panelSize&&Math.abs(ratio-Math.round(ratio))>.00001){gridMisaligned=true;errors.push(key+' must be a multiple of '+tank.panelSize+' ft.')}});if(gridMisaligned)errors.unshift('Calculation blocked: Tank dimensions must align with panel grid.');if(tank.legacyPartitionReview)errors.push('Legacy Partition — Review Required: physical partition dimensions are incomplete.');
+  const levelCount=Math.min(4,Math.max(0,Math.round(tank.hp)));
+  const levels={l1:levelCount>=1,l2:levelCount>=2,l3:levelCount>=3,l4:levelCount>=4,count:levelCount,overMax:tank.hp>4};
+  const externalPanelsPerLevel=2*(tank.lp+tank.wp);
+  const wallL1Panels=levels.l1?externalPanelsPerLevel:0;
+  const wallL2Panels=levels.l2?externalPanelsPerLevel:0;
+  const wallL3Panels=levels.l3?externalPanelsPerLevel:0;
+  const wallL4Panels=levels.l4?externalPanelsPerLevel:0;
+  const externalWallPanels=wallL1Panels+wallL2Panels+wallL3Panels+wallL4Panels;
+  const geometry={lengthFt:tank.length,widthFt:tank.width,heightFt:tank.height,panelSizeFt:tank.panelSize,lengthPanels:tank.lp,widthPanels:tank.wp,heightPanels:tank.hp,activeWallLevels:levels.count,roofPanels:Math.max(tank.lp*tank.wp-tank.manhole,0),basePanels:tank.lp*tank.wp,externalPanelsPerLevel,wallL1Panels,wallL2Panels,wallL3Panels,wallL4Panels,externalWallPanels,wallPanels:externalWallPanels,partitions:partitionGeometry.partitions,totalPartitionPanels:partitionGeometry.totalPartitionPanels,totalPanels:tank.lp*tank.wp+externalWallPanels+partitionGeometry.totalPartitionPanels,totalSteelPanels:tank.lp*tank.wp+externalWallPanels+partitionGeometry.totalPartitionPanels,compartmentCount:tank.partitions.length+1,suggestedManholeQty:tank.partitions.length+1,suggestedExtLadderQty:tank.partitions.length+1,suggestedIntLadderQty:tank.partitions.length+1,suggestedAirVentQty:tank.partitions.length+1,suggestedWliQty:tank.partitions.length+1,thicknessGroups:[{label:'Base',thickness:Number(tank.baseThickness)||0,panelCount:tank.lp*tank.wp},{label:'Wall L1',thickness:Number(tank.wallL1Thickness)||0,panelCount:wallL1Panels},{label:'Wall L2',thickness:Number(tank.wallL2Thickness)||0,panelCount:wallL2Panels},{label:'Wall L3',thickness:Number(tank.wallL3Thickness)||0,panelCount:wallL3Panels},{label:'Wall L4',thickness:Number(tank.wallL4Thickness)||0,panelCount:wallL4Panels},{label:'Partition',thickness:Number(tank.partitionThickness)||0,panelCount:partitionGeometry.totalPartitionPanels}],volumeFt3:tank.length*tank.width*tank.height};
+  const thicknessMap=new Map();[['Base',tank.baseThickness,tank.lp*tank.wp],['Wall L1',tank.wallL1Thickness,wallL1Panels],['Wall L2',tank.wallL2Thickness,wallL2Panels],['Wall L3',tank.wallL3Thickness,wallL3Panels],['Wall L4',tank.wallL4Thickness,wallL4Panels],['Partition',tank.partitionThickness,partitionGeometry.totalPartitionPanels]].forEach(([label,thickness,count])=>{if(!(Number(count)>0))return;const key=Number(thickness)||0,old=thicknessMap.get(key)||{label:`${key||'Unspecified'}mm`,thickness:key,panelCount:0,components:[]};old.panelCount+=Number(count)||0;old.components.push({label,panelCount:Number(count)||0});thicknessMap.set(key,old)});geometry.thicknessGroups=[...thicknessMap.values()];
+  const placement=winkoBuildPlacementEngine(tank);geometry.grid=placement.grid;
+  const compartmentCount=tank.partitions.length+1;
+  const suggestedManholeQty=compartmentCount,suggestedExtLadderQty=compartmentCount,suggestedIntLadderQty=compartmentCount,suggestedAirVentQty=compartmentCount,suggestedWliQty=compartmentCount;
+  const suggestedSafetyCageQty=tank.extLadderRequired==='yes'?(Number(tank.extLadderQty)||0):0;
+  tank.compartmentCount=compartmentCount;tank.suggestedManholeQty=suggestedManholeQty;tank.suggestedExtLadderQty=suggestedExtLadderQty;tank.suggestedIntLadderQty=suggestedIntLadderQty;tank.suggestedAirVentQty=suggestedAirVentQty;tank.suggestedWliQty=suggestedWliQty;tank.suggestedSafetyCageQty=suggestedSafetyCageQty;tank.internalLadderLengthFt=tank.height;tank.externalLadderLengthFt=tank.height+2;
   const oldActive=window.__activeTankForAccessory;window.__activeTankForAccessory=tank;
   let bom=[];
   try{
@@ -6594,11 +6787,27 @@ body[data-app-role="main"] #workflowTracker{display:block}
     return {id:x.id||String(index),item:x.item||x.name||'Item',category:x.cat||x.category||'Other',quantity,unitPrice,amount:quantity*unitPrice,included:true,source:source.label,sourceKind:source.kind,status:typeof quantityStatus==='function'?quantityStatus(x,tank):'Calculated',manual:x.manualQty!==null&&x.manualQty!==undefined&&x.manualQty!==''};
    }).filter(x=>options.includeZero||x.quantity>0);
   }finally{window.__activeTankForAccessory=oldActive}
-  bom=bom.map(row=>({...row,totalPrice:row.amount,include:row.included,verificationStatus:row.status,manualOverride:row.manual,manualOverrideReason:(typeof items!=='undefined'&&Array.isArray(items)?items.find(x=>(x.id||'')===row.id)?.overrideReason:'')||''}));
+  bom=bom.map(row=>{const sourceItem=typeof items!=='undefined'&&Array.isArray(items)?items.find(x=>(x.id||'')===row.id):null,placed=!row.manual?winkoPlacementQuantityForItem(row.item,placement):null,quantity=placed?placed.quantity:row.quantity,amount=quantity*row.unitPrice;return {...row,quantity,amount,totalPrice:amount,include:row.included,source:placed?.source||row.source,sourceKind:placed?'drawing':row.sourceKind,status:placed?.status||row.status,verificationStatus:placed?.status||row.status,crossCheck:placed?.crossCheck||null,manualOverride:row.manual,manualOverrideReason:sourceItem?.overrideReason||'',manualOverrideBy:sourceItem?.overrideBy||'',manualOverrideAt:sourceItem?.overrideAt||''}});
+  if(partitionGeometry.partitions.length){
+   partitionGeometry.partitions.forEach((p,index)=>bom.push({id:`partition-panel-${p.id}`,item:`Partition ${index+1} Panels`,category:'Panels',quantity:p.panelCount,unitPrice:0,amount:0,included:true,source:'Partition Geometry',sourceKind:'geometry',status:'Geometry Verified',manual:false,totalPrice:0,include:true,verificationStatus:'Geometry Verified',partition:p}));
+   bom.push({id:'partition-panels-total',item:'Total Partition Panels',category:'Panels',quantity:partitionGeometry.totalPartitionPanels,unitPrice:0,amount:0,included:true,source:'Partition Geometry',sourceKind:'geometry',status:'Geometry Verified',manual:false,totalPrice:0,include:true,verificationStatus:'Geometry Verified'});
+   bom.push({id:'partition-cleat',item:'Type (D) / Partition Cleat',category:'Cleats, Trusses & Rims',quantity:placement.cleatCounts.D,unitPrice:0,amount:0,included:true,source:placement.cleatCounts.D?'Partition Connection Nodes':'Partition Geometry',sourceKind:placement.cleatCounts.D?'drawing':'geometry',status:'ENGINEERING REVIEW',manual:false,totalPrice:0,include:true,verificationStatus:'ENGINEERING REVIEW',crossCheck:{placementQty:placement.cleatCounts.D,workbookQty:null,status:'REVIEW'}});
+  }
   const materialUnit=bom.reduce((sum,row)=>sum+row.amount,0),materialTotal=materialUnit*tank.qty;
-  const critical=bom.filter(x=>/scaled|estimate|review/i.test(x.status+' '+x.source));
+  const critical=bom.filter(x=>/scaled|estimate|review|required|reconciliation|factory reference|no verified|legacy formula|under review/i.test(x.status+' '+x.source));
   const valid=errors.length===0,warnings=critical.map(x=>x.item+' requires production review.');
-  return {ok:valid,valid,errors,warnings,input:{length:tank.length,width:tank.width,height:tank.height,panelSize:tank.panelSize,quantity:tank.qty,dimensionUnit:tank.dimensionUnit||tank.unit||'ft'},tank,geometry:{...geometry,lp:tank.lp,wp:tank.wp,hp:tank.hp,totalPanels:geometry.roofPanels+geometry.basePanels+geometry.wallPanels+tank.manhole,volume:geometry.volumeFt3},wallLevels:levels,bom,costs:{material:materialTotal,materialUnit,materialTotal,tankQuantity:tank.qty,waste:0,labour:0,installation:0,transport:0,other:0,subtotal:materialTotal},verification:{approved:valid&&!critical.length,verifiedReference:typeof verifiedReferenceFor==='function'&&!!verifiedReferenceFor(tank),hasScaledItems:critical.some(x=>/scaled|estimate/i.test(x.status+' '+x.source)),hasManualOverrides:bom.some(x=>x.manualOverride),productionApprovalRequired:critical.length>0,criticalItems:critical.map(x=>x.item),errors}};
+  const reconciliationOk=Math.abs((geometry.basePanels+geometry.externalWallPanels+geometry.totalPartitionPanels)-geometry.totalPanels)<.00001;
+  if(!reconciliationOk)errors.push('CRITICAL PANEL RECONCILIATION ERROR');
+  const accessoryReconciliation={manhole:{suggested:suggestedManholeQty,actual:tank.manhole,source:'Actual field; suggested from compartments'},externalLadder:{suggested:suggestedExtLadderQty,actual:tank.extLadderRequired==='yes'?Number(tank.extLadderQty)||0:0,source:'Actual field; suggested from compartments'},internalLadder:{suggested:suggestedIntLadderQty,actual:tank.intLadderRequired==='yes'?Number(tank.intLadderQty)||0:0,source:'Actual field; suggested from compartments'},airVent:{suggested:suggestedAirVentQty,actual:tank.airVentRequired==='yes'?Number(tank.airVentQty)||0:0,source:'Actual field; suggested from compartments'},wli:{suggested:suggestedWliQty,actual:tank.wliRequired==='yes'?Number(tank.wliQty)||0:0,source:'Actual field; suggested from compartments'}};
+  const accessoryReconciliationOk=Object.values(accessoryReconciliation).every(x=>x.actual===0||x.actual===x.suggested);
+  const m14Qty=Number(bom.find(x=>x.item==='M14x30 BN')?.quantity)||0,washerQty=Number(bom.find(x=>x.item==='M14 washer')?.quantity)||0,bnwQty=Number(bom.find(x=>x.item==='5/8 x 1Â½ BNW')?.quantity)||0,m16Qty=Number(bom.find(x=>x.item==='M16 x40mm B.N.W (set)')?.quantity)||0;
+  const breakdown=winkoBOMGeometry(tank);
+  const bnwRow=bom.find(x=>/^5\/8 x 1.*BNW$/i.test(String(x.item)))||{},bnwQtyForCheck=Number(bnwRow.quantity)||bnwQty;
+  const fastenerReconciliation={m14WasherMatches:m14Qty===washerQty,m16MatchesApprovedRelation:m16Qty===2*bnwQtyForCheck,breakdown:{baseJointM14:breakdown.baseJointM14,wallJointM14:breakdown.wallJointM14,cornerM14:breakdown.cornerM14,partitionM14:breakdown.partitionM14,bnwFromTypeB:breakdown.bnwFromTypeB,bnwFromTypeC:breakdown.bnwFromTypeC,bnwFromTypeC1:breakdown.bnwFromTypeC1,bnwFromPartition:breakdown.bnwFromPartition,roofFasteners:breakdown.roofFasteners,perimeterFasteners:breakdown.perimeterFasteners,partitionFasteners:breakdown.partitionFasteners}};
+  const cleatBomCount=type=>Number(bom.find(row=>row.item===`Type (${type}) Cleat`||type==='D'&&/^Type \(D\)/.test(row.item))?.quantity)||0,cleatReconciliationOk=!placement.drawingLinked||['A','B','C','D'].every(type=>cleatBomCount(type)===Number(placement.cleatCounts[type]||0)),stayReconciliationOk=!placement.drawingLinked||placement.stays.length===Object.values(placement.staySchedule).reduce((sum,qty)=>sum+Number(qty||0),0),roofReconciliationOk=!placement.drawingLinked||(placement.roof.trusses.length===0||Number(placement.crossChecks.roofTruss.placementQty)===placement.roof.trusses.length)&&(placement.roof.supports.length===0||Number(placement.crossChecks.roofSupport.placementQty)===placement.roof.supports.length);
+  const referenceStayRegression=isExactReferenceTank(tank)?{source:placement.drawingLinked?'Linked engineering drawing':'Verified 24 × 24 × 8 reference',cornerStay:{actual:placement.drawingLinked?Object.entries(placement.staySchedule).filter(([label])=>/67½/.test(label)).reduce((sum,[,qty])=>sum+qty,0):28,expected:28},mainStay:{actual:placement.drawingLinked?Object.entries(placement.staySchedule).filter(([label])=>/11.*3½/.test(label)).reduce((sum,[,qty])=>sum+qty,0):4,expected:4},roofTruss:{actual:placement.drawingLinked?placement.roof.trusses.length:10,expected:10},roofSupport:{actual:placement.drawingLinked?placement.roof.supports.length:5,expected:5}}:null;if(referenceStayRegression)referenceStayRegression.pass=['cornerStay','mainStay','roofTruss','roofSupport'].every(key=>referenceStayRegression[key].actual===referenceStayRegression[key].expected);
+  const structuralReconciliationOk=reconciliationOk&&cleatReconciliationOk&&stayReconciliationOk&&roofReconciliationOk&&(!referenceStayRegression||referenceStayRegression.pass);if(!structuralReconciliationOk)warnings.push('STRUCTURAL RECONCILIATION ERROR — production approval is required.');
+  return {ok:valid&&reconciliationOk,valid:valid&&reconciliationOk,errors,warnings,input:{length:tank.length,width:tank.width,height:tank.height,panelSize:tank.panelSize,quantity:tank.qty,dimensionUnit:tank.dimensionUnit||tank.unit||'ft'},tank,geometry:{...geometry,lp:tank.lp,wp:tank.wp,hp:tank.hp,reconciliationOk,volume:geometry.volumeFt3},engineering:placement,wallLevels:levels,bom,costs:{material:materialTotal,materialUnit,materialTotal,tankQuantity:tank.qty,waste:0,labour:0,installation:0,transport:0,other:0,subtotal:materialTotal},verification:{approved:valid&&structuralReconciliationOk&&!critical.length,verifiedReference:typeof verifiedReferenceFor==='function'&&!!verifiedReferenceFor(tank),hasScaledItems:critical.some(x=>/scaled|estimate|factory reference|no verified/i.test(x.status+' '+x.source)),hasManualOverrides:bom.some(x=>x.manualOverride),productionApprovalRequired:critical.length>0||!structuralReconciliationOk,criticalItems:critical.map(x=>x.item),partitionCount:tank.partitions.length,totalPartitionPanels:geometry.totalPartitionPanels,panelReconciliationOk:reconciliationOk,accessoryReconciliation,accessoryReconciliationOk,fastenerReconciliation,cleatReconciliationOk,stayReconciliationOk,roofReconciliationOk,structuralReconciliationOk,referenceStayRegression,ladderLengths:{externalFt:tank.externalLadderLengthFt,internalFt:tank.internalLadderLengthFt},errors}};
  }
  function currentFormTank(){try{return currentTankSnapshot()}catch(e){return {length:number(field('length')),width:number(field('width')),height:number(field('height')),panelSize:number(field('panelSize'),4),manhole:number(field('manhole')),qty:number(field('tankQty'),1)}}}
  function getCalculatedBomForTank(tankInput,options={}){return calculateTankResult(tankInput,options).bom}
@@ -6622,6 +6831,8 @@ body[data-app-role="main"] #workflowTracker{display:block}
  window.getCalculatedBomForQuotation=getCalculatedBomForQuotation;
  window.calculateQuotationTotals=calculateQuotationTotals;
  window.WinkoCalculator={calculateTankResult};
+ window.WinkoEngineeringPlacement={build:winkoBuildPlacementEngine,resolveDrawing:winkoResolveEngineeringDrawing,panelGrid:winkoPanelGrid,classifyStay:winkoClassifyStay,generateCleats:winkoGenerateCleats};
+ window.WinkoPartitionEngine={normalize:winkoNormalizePartition,normalizeMany:winkoNormalizePartitions,signature:winkoPartitionSignature,geometry:winkoBOMGeometry};
  window.WinkoBom={getCalculatedBomForTank,getCalculatedBomForQuotation};
  window.WinkoQuotation={calculateTotals:calculateQuotationTotals,fingerprint:snapshot=>hash(snapshot||captureCurrentSnapshot())};
 
@@ -6708,7 +6919,7 @@ body[data-app-role="main"] #workflowTracker{display:block}
   const tank=(height,extra={})=>({length:24,width:24,height,panelSize:4,manhole:1,qty:1,...extra});
   const activeSnapshot=()=>JSON.stringify({fields:['crmCustomer','crmProject','crmRef','currency','wastePct','profitPct','sstPct'].map(id=>[id,byId(id)?.value??null]),tanks:deep(appState.tanks),extras:(()=>{try{return deep(quotationExtraItems)}catch(e){return[]}})()});
   test('1. Central application state exists',()=>!!(window.WinkoAppState&&window.WinkoState&&window.WinkoRepository));
-  test('2. 24x24x8 geometry correct',()=>{const r=calculateTankResult(tank(8));return r.ok&&r.geometry.basePanels===36&&r.geometry.roofPanels===35&&r.geometry.wallPanels===48&&r.geometry.totalPanels===120});
+  test('2. 24x24x8 geometry correct',()=>{const r=calculateTankResult(tank(8));return r.ok&&r.geometry.basePanels===36&&r.geometry.roofPanels===35&&r.geometry.wallPanels===48&&r.geometry.externalWallPanels===48&&r.geometry.totalPanels===84});
   [4,8,12,16].forEach((height,index)=>test(`${index+3}. ${height} ft supported`,()=>calculateTankResult(tank(height)).ok));
   test('7. 10 ft rejected',()=>calculateTankResult(tank(10)).ok===false);
   test('8. Multi-tank aggregation finite',()=>{const r=getCalculatedBomForQuotation([tank(8),{...tank(4),length:12,width:8}]);return r.tanks.length===2&&Number.isFinite(r.material)});
@@ -6745,6 +6956,13 @@ body[data-app-role="main"] #workflowTracker{display:block}
   test('37. Wall level display matches supported heights',()=>[4,8,12,16].every((height,index)=>calculateTankResult(tank(height)).geometry.activeWallLevels===index+1));
   test('38. Selected accessories enter the calculated BOM',()=>{const result=calculateTankResult(tank(8,{extLadderRequired:'yes',extLadderQty:1,intLadderRequired:'yes',intLadderQty:1,safetyCageRequired:'yes',safetyCageQty:1,airVentRequired:'yes',airVentQty:1,wliRequired:'yes',wliQty:1}));const names=result.bom.filter(row=>row.quantity>0).map(row=>row.item.toLowerCase());return [/ext\. ladder/,/int\. ladder/,/safety cage/,/air-vents/,/water level indicator/].every(pattern=>names.some(item=>pattern.test(item)))});
   test('39. Selected partition enters the calculated BOM',()=>{const result=calculateTankResult(tank(8,{partitionRequired:'yes',partitionType:'Internal panel partition',partitionLength:24,partitionWidth:8,partitionQty:1}));return result.bom.some(row=>/partition/i.test(row.item)&&row.quantity>0)});
+  test('40. Factory partition regression A: 12x4x8',()=>calculateTankResult({length:12,width:4,height:8,panelSize:4,partitions:[]}).geometry.totalPanels===19);
+  test('41. Factory partition regression B: 44x12x12',()=>calculateTankResult({length:44,width:12,height:12,panelSize:4,partitions:[{length:12,width:12,dimensionUnit:'ft'},{length:12,width:12,dimensionUnit:'ft'}]}).geometry.totalPanels===135);
+  test('42. Factory partition regression C: 32x12x16',()=>calculateTankResult({length:32,width:12,height:16,panelSize:4,partitions:[{length:12,width:16,dimensionUnit:'ft'},{length:12,width:16,dimensionUnit:'ft'}]}).geometry.totalPanels===136);
+  test('43. Factory partition regression D: 32x28x12',()=>calculateTankResult({length:32,width:28,height:12,panelSize:4,partitions:[{length:28,width:12,dimensionUnit:'ft'}]}).geometry.totalPanels===167);
+  test('44. Partition reconciliation is explicit',()=>{const r=calculateTankResult({length:44,width:12,height:12,panelSize:4,partitions:[{length:12,width:12},{length:12,width:12}]});return r.geometry.reconciliationOk&&r.verification.panelReconciliationOk&&r.geometry.totalPartitionPanels===18});
+  test('45. 24x24x8 verified BOM rows remain authoritative',()=>{const r=calculateTankResult(tank(8)),ref=verifiedBomReferences['24|24|8'];return Object.entries(ref).every(([item,qty])=>Number(r.bom.find(row=>row.item===item)?.quantity)===Number(qty))});
+  test('46. Ladder lengths follow factory reference rule',()=>{const r=calculateTankResult(tank(16,{extLadderRequired:'yes',extLadderQty:3,intLadderRequired:'yes',intLadderQty:3}));return r.verification.ladderLengths.externalFt===18&&r.verification.ladderLengths.internalFt===16});
   const passed=checks.filter(x=>x.ok).map(x=>x.name),failed=checks.filter(x=>!x.ok).map(x=>({name:x.name,detail:x.detail})),warnings=[];
   if((document.documentElement.innerHTML.match(/@media\s+print\b/gi)||[]).length>1)warnings.push('Legacy print declarations remain in the single-file cascade; the iframe PDF stylesheet is authoritative.');
   const report={ok:failed.length===0,passed,failed,warnings,ranAt:new Date().toISOString(),role:role(),checks};console.group('WINKO SELF TEST');console.log('PASS: '+passed.length);console.log('FAIL: '+failed.length);console.log('WARN: '+warnings.length);console.table(checks);console.groupEnd();return report;
@@ -6830,7 +7048,7 @@ body[data-app-role="main"] #workflowTracker{display:block}
     const output=document.getElementById('winkoCalcOutput');if(!output)return;
     if(!window.WinkoCalculator?.calculateTankResult){output.innerHTML='<div class="winko-calc-error">The verified calculator is not ready. Reload the page and try again.</div>';return}
     const unit=document.getElementById('winkoCalcUnit')?.value||'ft',quantity=Math.max(1,Math.round(number('winkoCalcQty',1))),accessory=(id,qty)=>checked(id)?Math.max(1,Math.round(number(qty,1))):0;
-    const input={dimensionUnit:unit,displayLength:number('winkoCalcLength'),displayWidth:number('winkoCalcWidth'),displayHeight:number('winkoCalcHeight'),displayPanelSize:number('winkoCalcPanelSize',unit==='m'?1.2192:4),qty:quantity,manhole:1,manholeAccessoryQty:1,extLadderRequired:checked('winkoCalcExternalLadder')?'yes':'no',extLadderQty:accessory('winkoCalcExternalLadder','winkoCalcQty'),intLadderRequired:checked('winkoCalcInternalLadder')?'yes':'no',intLadderQty:accessory('winkoCalcInternalLadder','winkoCalcQty'),safetyCageRequired:'no',safetyCageQty:0,airVentRequired:checked('winkoCalcAirVent')?'yes':'no',airVentQty:accessory('winkoCalcAirVent','winkoCalcQty'),wliRequired:checked('winkoCalcWli')?'yes':'no',wliQty:accessory('winkoCalcWli','winkoCalcQty'),partitionRequired:checked('winkoCalcPartition')?'yes':'no',partitionQty:checked('winkoCalcPartition')?1:0,partitionLength:0,partitionWidth:0};
+    const input={dimensionUnit:unit,displayLength:number('winkoCalcLength'),displayWidth:number('winkoCalcWidth'),displayHeight:number('winkoCalcHeight'),displayPanelSize:number('winkoCalcPanelSize',unit==='m'?1.2192:4),qty:quantity,manhole:1,manholeAccessoryQty:1,extLadderRequired:checked('winkoCalcExternalLadder')?'yes':'no',extLadderQty:accessory('winkoCalcExternalLadder','winkoCalcQty'),intLadderRequired:checked('winkoCalcInternalLadder')?'yes':'no',intLadderQty:accessory('winkoCalcInternalLadder','winkoCalcQty'),safetyCageRequired:'no',safetyCageQty:0,airVentRequired:checked('winkoCalcAirVent')?'yes':'no',airVentQty:accessory('winkoCalcAirVent','winkoCalcQty'),wliRequired:checked('winkoCalcWli')?'yes':'no',wliQty:accessory('winkoCalcWli','winkoCalcQty'),partitions:window.winkoGetQuickPartitions?.()||[]};
     const result=window.WinkoCalculator.calculateTankResult(input);
     window.WinkoQuickCalculation.lastResult=result;
     if(!result?.ok){output.innerHTML='<div class="winko-calc-error"><strong>Calculation cannot continue.</strong><br>'+esc((result?.errors||['Check the tank dimensions.']).join(' '))+'</div>';return}
@@ -6842,7 +7060,7 @@ body[data-app-role="main"] #workflowTracker{display:block}
   function open(){
     if(role()!=='sales'){window.WinkoRuntime?.notifyWarning?.('Quick Calculation is available in the Sales portal.');return false}
     close();const modal=document.createElement('div');modal.id='winkoSalesQuickCalculatorModal';modal.className='winko-calc-backdrop';modal.innerHTML='<section class="winko-calc-dialog" role="dialog" aria-modal="true" aria-labelledby="winkoCalcTitle"><header class="winko-calc-head"><div><h2 id="winkoCalcTitle">Quick Tank Calculation</h2><p>Calculate a preliminary tank BOM and selling estimate without generating a quotation.</p></div><button class="winko-calc-close" type="button" aria-label="Close">×</button></header><div class="winko-calc-body"><section class="winko-calc-card"><h3>Tank details</h3><div class="winko-calc-card-body"><div class="winko-calc-grid"><div class="winko-calc-field"><label>Unit</label><select id="winkoCalcUnit"><option value="ft">Feet (ft)</option><option value="m">Metres (m)</option></select></div><div class="winko-calc-field"><label>Tank quantity</label><input id="winkoCalcQty" type="number" min="1" step="1" value="1"></div><div class="winko-calc-field"><label>Length</label><input id="winkoCalcLength" type="number" min="0.01" step="0.01" value="12"></div><div class="winko-calc-field"><label>Width</label><input id="winkoCalcWidth" type="number" min="0.01" step="0.01" value="8"></div><div class="winko-calc-field"><label>Height</label><input id="winkoCalcHeight" type="number" min="0.01" step="0.01" value="8"></div><div class="winko-calc-field"><label>Panel size</label><input id="winkoCalcPanelSize" type="number" min="0.01" step="0.01" value="4"></div></div><div class="winko-calc-checks"><label><input id="winkoCalcExternalLadder" type="checkbox" checked> External ladder</label><label><input id="winkoCalcInternalLadder" type="checkbox" checked> Internal ladder</label><label><input id="winkoCalcAirVent" type="checkbox" checked> Air vent</label><label><input id="winkoCalcWli" type="checkbox" checked> Level indicator</label><label><input id="winkoCalcPartition" type="checkbox"> Partition</label></div><div class="winko-calc-actions"><button class="winko-calc-run" type="button">Calculate</button><button class="winko-calc-clear" type="button">Clear</button></div><p class="winko-calc-note">Supported heights are 4, 8, 12 and 16 ft. Dimensions must align with the selected panel size.</p></div></section><section class="winko-calc-card"><h3>Temporary result</h3><div class="winko-calc-card-body" id="winkoCalcOutput"><div class="winko-calc-empty">Enter the tank size and press Calculate.<br>No quotation will be generated.</div></div></section></div></section>';
-    modal.querySelector('.winko-calc-close').onclick=close;modal.querySelector('.winko-calc-run').onclick=calculate;modal.querySelector('.winko-calc-clear').onclick=clearCalculation;modal.addEventListener('click',event=>{if(event.target===modal)close()});modal.addEventListener('keydown',event=>{if(event.key==='Escape')close()});document.body.appendChild(modal);setTimeout(()=>document.getElementById('winkoCalcLength')?.focus(),0);return true
+    modal.querySelector('#winkoCalcPartition')?.closest('label')?.remove();modal.querySelector('.winko-calc-close').onclick=close;modal.querySelector('.winko-calc-run').onclick=calculate;modal.querySelector('.winko-calc-clear').onclick=clearCalculation;modal.addEventListener('click',event=>{if(event.target===modal)close()});modal.addEventListener('keydown',event=>{if(event.key==='Escape')close()});document.body.appendChild(modal);setTimeout(()=>document.getElementById('winkoCalcLength')?.focus(),0);return true
   }
   window.winkoOpenQuickCalculator=open;window.winkoCloseQuickCalculator=close;window.WinkoQuickCalculation={open,close,calculate,clear:clearCalculation,lastResult:null,persistent:false};
 })();
@@ -7333,6 +7551,148 @@ default:return'<p class="winko-settings-note">Select a settings group.</p>'}}
 </script>
 <style id="winko-system-settings-css">
 .winko-settings-shell{display:grid;gap:18px}.winko-settings-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding-bottom:16px;border-bottom:1px solid #dce6eb}.winko-settings-eyebrow{color:#728794;font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.winko-settings-head h2,.winko-settings-panel-head h2{margin:3px 0 4px;color:#173b57;font-size:25px}.winko-settings-head p,.winko-settings-panel-head p{margin:0;color:#607480;font-size:12px}.winko-settings-head input{width:min(300px,100%);height:40px;box-sizing:border-box}.winko-settings-message{min-height:0;color:#216b4d;font-size:11px;font-weight:700}.winko-settings-group{display:grid;gap:10px}.winko-settings-group>h3{margin:0;color:#173b57;font-size:12px;letter-spacing:.08em;text-transform:uppercase}.winko-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.winko-settings-card{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:94px;padding:14px;border:1px solid #d6e3ea;border-radius:9px;background:#fff;box-shadow:0 3px 12px #123b5a0a}.winko-settings-card-icon{display:grid;place-items:center;width:32px;height:32px;border-radius:7px;background:#eaf4fb;color:#173b57;font-size:13px;font-weight:800}.winko-settings-card h3{margin:0;color:#173b57;font-size:14px}.winko-settings-card p{margin:5px 0 0;color:#607480;font-size:11px;line-height:1.4}.winko-settings-card button{white-space:nowrap}.winko-settings-panel-head{display:grid;gap:10px;padding-bottom:15px;border-bottom:1px solid #dce6eb}.winko-settings-panel-head>div{padding-left:2px}.winko-settings-panel-body{border:1px solid #d6e3ea;border-radius:9px;background:#fff;overflow:hidden}.winko-settings-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:18px 16px}.winko-settings-form-grid.compact{padding:0;gap:10px}.winko-settings-field{display:grid;align-content:start;gap:6px;min-width:0;color:#425865;font-size:12px;font-weight:700}.winko-settings-field.full{grid-column:1/-1}.winko-settings-field>span{display:block}.winko-settings-field input,.winko-settings-field select,.winko-settings-field textarea{box-sizing:border-box;width:100%;min-height:40px;padding:9px 10px;border:1px solid #cbd9e1;border-radius:6px;background:#fff;color:#173b57;font:inherit;font-size:13px}.winko-settings-field textarea{resize:vertical;line-height:1.4}.winko-settings-check-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.winko-settings-check{display:flex;align-items:center;gap:8px;min-height:34px;padding:7px 8px;border:1px solid #dce6eb;border-radius:6px;background:#fbfdfe;color:#425865;font-size:11px;font-weight:700}.winko-settings-check input{width:16px;height:16px;accent-color:#173b57}.winko-settings-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap;padding:13px 16px;border-top:1px solid #e3ebef;background:#f7fafc}.winko-settings-actions [data-settings-save-state]{color:#216b4d;font-size:11px;font-weight:800}.winko-settings-note{margin:0;padding:0 16px 15px;color:#607480;font-size:11px;line-height:1.45}.winko-bom-engine{display:grid;gap:5px;margin:0 16px;padding:12px;border:1px solid #b9dfc9;border-radius:7px;background:#f1faf5;color:#216b4d;font-size:11px}.winko-bom-engine strong{color:#173b57;font-size:12px}.winko-permission-overview{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px}.winko-permission-overview>div{padding:13px;border:1px solid #dce6eb;border-radius:7px;background:#fbfdfe}.winko-permission-overview h3{margin:0 0 8px;color:#173b57;font-size:12px}.winko-permission-overview p{margin:5px 0;color:#216b4d;font-size:11px;line-height:1.5}.winko-permission-overview p.deny{color:#a13a37}.winko-settings-linked{display:grid;gap:12px;padding:17px}.winko-settings-linked h3{margin:0;color:#173b57}.winko-settings-linked p{margin:0;color:#607480;font-size:11px}.winko-settings-linked-preview{display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid #bcd8e8;border-radius:7px;background:#eef7fc;color:#31586f;font-size:11px}.winko-settings-linked-preview strong{color:#173b57;font-size:17px}.winko-settings-health{padding:16px}.winko-settings-health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.winko-settings-health-grid>div{display:grid;gap:5px;padding:11px;border:1px solid #dce6eb;border-radius:7px;background:#fbfdfe}.winko-settings-health-grid span{color:#71838d;font-size:10px;text-transform:uppercase}.winko-settings-health-grid strong{color:#173b57;font-size:12px}.winko-settings-health-grid strong.ok{color:#216b4d}.winko-settings-health-grid strong.warn{color:#8a5a00}.winko-settings-link-list{display:grid;gap:1px}.winko-settings-link-list button{display:flex;justify-content:space-between;padding:13px 16px;border:0;border-bottom:1px solid #e3ebef;border-radius:0;background:#fff;color:#173b57;text-align:left}.winko-settings-link-list button span{color:#607480;font-size:11px}@media(max-width:800px){.winko-settings-head{align-items:stretch;flex-direction:column}.winko-settings-head input{width:100%}.winko-settings-grid,.winko-permission-overview{grid-template-columns:1fr}.winko-settings-check-grid,.winko-settings-health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.winko-settings-form-grid{grid-template-columns:1fr;padding:14px 12px}.winko-settings-field.full{grid-column:auto}.winko-settings-check-grid,.winko-settings-health-grid{grid-template-columns:1fr}.winko-settings-actions{align-items:stretch;padding:12px}.winko-settings-actions button{width:100%}.winko-settings-card{grid-template-columns:30px minmax(0,1fr);gap:10px}.winko-settings-card button{grid-column:1/-1;width:100%}}
+</style>
+<style id="winko-partition-editor-css">
+.winko-partition-editor{grid-column:1/-1;margin:10px 0 2px;padding:12px;border:1px solid #d6e0e7;border-radius:8px;background:#f8fbfd}.winko-partition-editor-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}.winko-partition-editor-head strong{color:#173b57;font-size:12px}.winko-partition-editor-head small{display:block;margin-top:3px;color:#657782;font-size:10px}.winko-partition-rows{display:grid;gap:8px}.winko-partition-row{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(0,1fr) auto;gap:7px;align-items:end;padding:9px;border:1px solid #dce6eb;border-radius:7px;background:#fff}.winko-partition-row b{align-self:center;color:#173b57;font-size:11px}.winko-partition-row label{display:grid;gap:4px;color:#617482;font-size:10px;font-weight:700}.winko-partition-row input{width:100%;box-sizing:border-box;min-height:32px;padding:6px 7px;border:1px solid #cbd8df;border-radius:5px}.winko-partition-row button{min-height:32px;padding:6px 9px;font-size:10px}.winko-partition-editor .winko-partition-message{min-height:14px;margin-top:7px;color:#a13a37;font-size:10px;font-weight:700}.winko-partition-editor .winko-partition-message.ok{color:#216b4d}.compact-partition-editor{grid-column:1/-1}.compact-partition-editor .winko-partition-row{grid-template-columns:24px minmax(0,1fr) minmax(0,1fr) auto}.compact-partition-editor .winko-partition-editor-head button{padding:6px 9px;font-size:10px}
+@media(max-width:560px){.winko-partition-row{grid-template-columns:24px 1fr 1fr}.winko-partition-row button{grid-column:2/-1;width:100%}}
+#design #partitionRequired,#design #partitionType,#design #partitionLengthField,#design #partitionWidthField,#design #partitionQtyField{display:none!important}
+#design #partitionRequired,#design #partitionType{display:none!important}
+</style>
+<script id="winko-partition-editor-script">
+(function(){
+ 'use strict';
+ const state={main:[],quick:[]};
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+ const num=value=>{const n=Number(value);return Number.isFinite(n)?n:0};
+ const unitOf=prefix=>document.getElementById(prefix==='quick'?'ceUnit':'dimensionUnit')?.value||'ft';
+ function normalized(parts,unit){return (Array.isArray(parts)?parts:[]).map((p,i)=>winkoNormalizePartition(p,i,unit));}
+ function legacy(prefix,parts){
+  const isQuick=prefix==='quick',ids=isQuick?{required:'cePartition',qty:'cePartitionQty',length:'cePartitionLength',width:'cePartitionWidth'}:{required:'partitionRequired',qty:'partitionQty',length:'partitionLength',width:'partitionWidth'};
+  const first=parts[0],set=(id,value)=>{const node=document.getElementById(id);if(node)node.value=value};
+  set(ids.required,parts.length?'yes':'no');set(ids.qty,parts.length);set(ids.length,first?.length||0);set(ids.width,first?.width||0);
+ }
+ function rowMarkup(prefix,p,index){
+  const unit=p.dimensionUnit||unitOf(prefix);
+  return `<div class="winko-partition-row" data-partition-row="${prefix}" data-index="${index}"><b>P${index+1}</b><label>Length (${unit})<input type="number" min="0" step="0.01" data-partition-field="length" value="${p.length||0}"></label><label>Width (${unit})<input type="number" min="0" step="0.01" data-partition-field="width" value="${p.width||0}"></label><button type="button" class="secondary" data-partition-remove>Remove</button></div>`;
+ }
+ function render(prefix){
+  const host=document.getElementById(prefix==='quick'?'winkoQuickPartitionRows':'winkoPartitionRows');if(!host)return;
+  const parts=state[prefix],unit=unitOf(prefix),message=document.getElementById(prefix==='quick'?'winkoQuickPartitionMessage':'winkoPartitionMessage');
+  host.innerHTML=parts.length?parts.map((p,i)=>rowMarkup(prefix,p,i)).join(''):'<div class="small-note">No partitions added.</div>';
+  if(message){const invalid=parts.some(p=>!(p.length>0&&p.width>0));message.textContent=invalid?'Enter a positive length and width for every partition.':parts.length?`${parts.length} partition${parts.length===1?'':'s'} · each row is calculated independently.`:'';message.classList.toggle('ok',!invalid&&!!parts.length)}
+  host.querySelectorAll('[data-partition-remove]').forEach(button=>button.addEventListener('click',()=>{const row=button.closest('[data-partition-row]'),index=Number(row?.dataset.index);state[prefix].splice(index,1);legacy(prefix,state[prefix]);render(prefix);window.invalidateProductionApproval?.();window.calculate?.();window.WinkoState?.markDirty?.()}));
+  host.querySelectorAll('[data-partition-field]').forEach(input=>input.addEventListener('input',()=>{const row=input.closest('[data-partition-row]'),index=Number(row?.dataset.index),key=input.dataset.partitionField;if(!state[prefix][index])return;state[prefix][index][key]=num(input.value);state[prefix][index].dimensionUnit=unit;state[prefix][index]=winkoNormalizePartition(state[prefix][index],index,unit);legacy(prefix,state[prefix]);window.invalidateProductionApproval?.();window.calculate?.();window.WinkoState?.markDirty?.()}));
+ }
+ function add(prefix){state[prefix].push({id:`partition-${Date.now()}-${state[prefix].length+1}`,length:0,width:0,dimensionUnit:unitOf(prefix)});legacy(prefix,state[prefix]);render(prefix);window.calculate?.();window.WinkoState?.markDirty?.()}
+ function mountMain(){
+ const anchor=document.getElementById('partitionSummaryResult')||document.getElementById('partitionQtyField');if(!anchor||document.getElementById('winkoPartitionEditor'))return;
+  ['partitionRequired','partitionType','partitionLengthField','partitionWidthField','partitionQtyField'].forEach(id=>{const node=document.getElementById(id);const field=node?.classList.contains('field')?node:node?.closest('.field');if(field)field.style.display='none'});
+  const box=document.createElement('div');box.id='winkoPartitionEditor';box.className='winko-partition-editor';box.innerHTML='<div class="winko-partition-editor-head"><div><strong>Partitions</strong><small>Each partition uses its own physical length × width.</small></div><button type="button" class="primary" id="winkoAddPartition">+ Add Partition</button></div><div class="winko-partition-rows" id="winkoPartitionRows"></div><div class="winko-partition-message" id="winkoPartitionMessage"></div>';anchor.parentNode.insertBefore(box,anchor.nextSibling);
+  const legacyParts=winkoNormalizePartitions({partitionRequired:document.getElementById('partitionRequired')?.value,partitionQty:document.getElementById('partitionQty')?.value,partitionLength:document.getElementById('partitionLength')?.value,partitionWidth:document.getElementById('partitionWidth')?.value,partitionUnit:unitOf('main')},unitOf('main'));state.main=legacyParts;legacy('main',state.main);render('main');document.getElementById('winkoAddPartition').onclick=()=>add('main');
+ }
+ function mountQuick(){
+ const host=document.getElementById('cePartition')?.closest('.compact-fields');if(!host||document.getElementById('winkoQuickPartitionEditor'))return;
+  ['cePartition','cePartitionType','cePartitionQty','cePartitionLength','cePartitionWidth'].forEach(id=>{const field=document.getElementById(id)?.closest('.compact-field');if(field)field.style.display='none'});
+  const box=document.createElement('div');box.id='winkoQuickPartitionEditor';box.className='compact-partition-editor winko-partition-editor';box.innerHTML='<div class="winko-partition-editor-head"><div><strong>Partitions</strong><small>Add each partition by its own length and width.</small></div><button type="button" class="secondary" id="winkoQuickAddPartition">+ Add Partition</button></div><div class="winko-partition-rows" id="winkoQuickPartitionRows"></div><div class="winko-partition-message" id="winkoQuickPartitionMessage"></div>';host.appendChild(box);
+  state.quick=winkoNormalizePartitions({partitionRequired:document.getElementById('cePartition')?.value,partitionQty:document.getElementById('cePartitionQty')?.value,partitionLength:document.getElementById('cePartitionLength')?.value,partitionWidth:document.getElementById('cePartitionWidth')?.value,partitionUnit:unitOf('quick')},unitOf('quick'));legacy('quick',state.quick);render('quick');document.getElementById('winkoQuickAddPartition').onclick=()=>add('quick');
+ }
+ window.winkoGetCurrentPartitions=()=>state.main.length?normalized(state.main,unitOf('main')):winkoNormalizePartitions({partitionRequired:document.getElementById('partitionRequired')?.value,partitionQty:document.getElementById('partitionQty')?.value,partitionLength:document.getElementById('partitionLength')?.value,partitionWidth:document.getElementById('partitionWidth')?.value,partitionUnit:unitOf('main')},unitOf('main'));
+ window.winkoGetQuickPartitions=()=>state.quick.length?normalized(state.quick,unitOf('quick')):[];
+ window.winkoSetCurrentPartitions=(parts,unit)=>{state.main=normalized(parts,unit||unitOf('main'));legacy('main',state.main);render('main')};
+ window.winkoSetQuickPartitions=(parts,unit)=>{state.quick=normalized(parts,unit||unitOf('quick'));legacy('quick',state.quick);render('quick')};
+ function init(){mountMain();mountQuick();document.getElementById('dimensionUnit')?.addEventListener('change',()=>{state.main=normalized(state.main,unitOf('main'));render('main')});document.getElementById('ceUnit')?.addEventListener('change',()=>{state.quick=normalized(state.quick,unitOf('quick'));render('quick')})}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<script id="winko-bom-confidence-script">
+(function(){
+ 'use strict';
+ const original=window.quantitySourceInfo;
+ if(typeof original!=='function'||original.__winkoConfidence)return;
+ const confidence=function(item,tank){
+  const source=original(item,tank)||{};
+  if(source.kind==='manual'||item?.manualQty!==null&&item?.manualQty!==undefined&&item?.manualQty!=='')return {label:'MANUAL OVERRIDE',kind:'manual'};
+  const text=String(source.label||'').toLowerCase();
+  if(/verified 24|verified factory/.test(text))return {label:'VERIFIED FACTORY',kind:'verified'};
+  if(/stay layout/.test(text))return {label:'DRAWING SCHEDULE',kind:'verified'};
+  if(/bom.xlsx|workbook/.test(text))return {label:'WORKBOOK FORMULA',kind:'formula'};
+  if(/geometry/.test(text))return {label:'GEOMETRY VERIFIED',kind:'formula'};
+  if(/scaling|scaled/.test(text))return {label:'SCALED REFERENCE — PRODUCTION REVIEW',kind:'scaled'};
+  if(/estimate/.test(text))return {label:'ESTIMATE',kind:'estimate'};
+  if(/no source/.test(text))return {label:'NO VERIFIED SOURCE',kind:'scaled'};
+  return {label:'FACTORY REFERENCE',kind:'reference'};
+ };
+ confidence.__winkoConfidence=true;window.quantitySourceInfo=confidence;
+ const statusOriginal=window.quantityStatus;
+ if(typeof statusOriginal==='function'){
+  const status=function(item,tank){const raw=statusOriginal(item,tank);if(/REVIEW|VALIDATION REQUIRED|MATCHED|LEGACY FORMULA/i.test(String(raw)))return raw;const source=confidence(item,tank);if(source.kind==='manual')return 'MANUAL';if(source.kind==='verified')return 'FACTORY VERIFIED';if(source.kind==='formula'&&/geometry/i.test(source.label))return 'GEOMETRY VERIFIED';if(source.kind==='formula')return 'WORKBOOK VERIFIED';if(source.kind==='reference')return 'REFERENCE';if(source.kind==='scaled')return 'SCALED';return raw};status.__winkoConfidence=true;window.quantityStatus=status;
+ }
+})();
+</script>
+<script id="winko-quick-partition-modal-script">
+(function(){
+ 'use strict';
+ const oldGetter=window.winkoGetQuickPartitions;
+ const n=value=>{const x=Number(value);return Number.isFinite(x)?x:0};
+ function mount(){
+  const modal=document.getElementById('winkoSalesQuickCalculatorModal');if(!modal||modal.querySelector('#winkoCalcPartitionEditor'))return;
+  const actions=modal.querySelector('.winko-calc-actions');if(!actions)return;
+  const box=document.createElement('div');box.id='winkoCalcPartitionEditor';box.className='winko-partition-editor';box.innerHTML='<div class="winko-partition-editor-head"><div><strong>Partitions</strong><small>Each row is calculated from its own length × width.</small></div><button type="button" class="secondary" id="winkoCalcAddPartition">+ Add Partition</button></div><div class="winko-partition-rows" id="winkoCalcPartitionRows"></div><div class="winko-partition-message" id="winkoCalcPartitionMessage"></div>';actions.parentNode.insertBefore(box,actions);
+  const parts=[];window.__winkoQuickModalPartitions=parts;const unit=()=>modal.querySelector('#winkoCalcUnit')?.value||'ft';
+  const render=()=>{const host=modal.querySelector('#winkoCalcPartitionRows'),message=modal.querySelector('#winkoCalcPartitionMessage');host.innerHTML=parts.length?parts.map((p,i)=>`<div class="winko-partition-row" data-index="${i}"><b>P${i+1}</b><label>Length (${unit()})<input type="number" min="0" step="0.01" data-partition-field="length" value="${p.length||0}"></label><label>Width (${unit()})<input type="number" min="0" step="0.01" data-partition-field="width" value="${p.width||0}"></label><button type="button" class="secondary" data-partition-remove>Remove</button></div>`).join(''):'<div class="small-note">No partitions added.</div>';message.textContent=parts.length?`${parts.length} partition${parts.length===1?'':'s'} added.`:'';host.querySelectorAll('[data-partition-remove]').forEach(b=>b.onclick=()=>{parts.splice(Number(b.closest('[data-index]')?.dataset.index),1);render()});host.querySelectorAll('[data-partition-field]').forEach(input=>input.oninput=()=>{const i=Number(input.closest('[data-index]')?.dataset.index);parts[i][input.dataset.partitionField]=n(input.value)})};
+  modal.querySelector('#winkoCalcAddPartition').onclick=()=>{parts.push({length:0,width:0,dimensionUnit:unit()});render()};modal.querySelector('#winkoCalcUnit')?.addEventListener('change',()=>{parts.forEach(p=>p.dimensionUnit=unit());render()});render();
+ }
+ window.winkoGetQuickPartitions=()=>{const modalParts=window.__winkoQuickModalPartitions;if(Array.isArray(modalParts)&&document.getElementById('winkoSalesQuickCalculatorModal'))return modalParts;return typeof oldGetter==='function'?oldGetter():[]};
+ const observer=new MutationObserver(mutations=>{if(mutations.some(m=>[...m.addedNodes].some(node=>node.nodeType===1&&(node.id==='winkoSalesQuickCalculatorModal'||node.querySelector?.('#winkoSalesQuickCalculatorModal')))))mount()});observer.observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+<script id="winko-bom-breakdown-script">
+(function(){
+ 'use strict';
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+ function openBreakdown(){
+  if(typeof window.getWinkoRole==='function'&&window.getWinkoRole()==='sales'){window.WinkoRuntime?.notifyWarning?.('Calculation details are available to Main only.');return false}
+  const tanks=Array.isArray(window.getQuoteTanks?.())&&window.getQuoteTanks().length?window.getQuoteTanks():[window.currentTankSnapshot?.()||{}];
+  const results=tanks.map(t=>window.WinkoCalculator?.calculateTankResult(t)).filter(Boolean);if(!results.length)return false;
+  document.getElementById('winkoBomBreakdownModal')?.remove();const modal=document.createElement('div');modal.id='winkoBomBreakdownModal';modal.className='winko-calc-backdrop';modal.innerHTML='<section class="winko-calc-dialog" role="dialog" aria-modal="true"><header class="winko-calc-head"><div><h2>View Calculation</h2><p>Canonical geometry, partitions and calculation confidence.</p></div><button type="button" class="winko-calc-close" aria-label="Close">×</button></header><div class="winko-calc-body"><section class="winko-calc-card"><h3>Panel geometry</h3><div class="winko-calc-card-body" id="winkoBreakdownGeometry"></div></section><section class="winko-calc-card"><h3>Calculation sources</h3><div class="winko-calc-card-body" id="winkoBreakdownSources"></div></section></div></section>';
+  const geometry=modal.querySelector('#winkoBreakdownGeometry'),sources=modal.querySelector('#winkoBreakdownSources');geometry.innerHTML=results.map((r,i)=>{const g=r.geometry,t=r.tank;return `<div class="winko-breakdown-tank"><strong>Tank ${i+1}: ${esc(t.length)} × ${esc(t.width)} × ${esc(t.height)} ft</strong><div class="winko-breakdown-grid"><span>Base panels</span><b>${g.basePanels}</b><span>External wall / level</span><b>${g.externalPanelsPerLevel}</b><span>Wall L1–L4</span><b>${g.wallL1Panels} / ${g.wallL2Panels} / ${g.wallL3Panels} / ${g.wallL4Panels}</b><span>External wall total</span><b>${g.externalWallPanels}</b><span>Partition panels</span><b>${g.totalPartitionPanels}</b><span>Total steel panels</span><b>${g.totalSteelPanels}</b><span>Roof covers (separate)</span><b>${g.roofPanels}</b><span>Compartments</span><b>${g.compartmentCount}</b><span>Manhole suggested / actual</span><b>${g.suggestedManholeQty} / ${t.manhole}</b><span>Ladder lengths</span><b>Ext ${t.externalLadderLengthFt} ft · Int ${t.internalLadderLengthFt} ft</b></div>${g.partitions?.length?'<div class="winko-breakdown-partitions">'+g.partitions.map((p,n)=>`<span>Partition ${n+1} — ${p.length} × ${p.width} ${p.dimensionUnit}</span><b>${p.panelCount} panels</b>`).join('')+'</div>':''}</div>`}).join('');const labels=[];results.forEach(r=>r.bom.forEach(row=>{if(!labels.some(x=>x.item===row.item))labels.push({item:row.item,source:row.source||row.status})}));sources.innerHTML='<div class="winko-breakdown-source-list">'+labels.map(x=>`<div><span>${esc(x.item)}</span><b>${esc(x.source)}</b></div>`).join('')+'</div>';modal.querySelector('.winko-calc-close').onclick=()=>modal.remove();modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()});document.body.appendChild(modal);return true;
+ }
+ window.winkoOpenBomCalculationBreakdown=openBreakdown;
+ window.renderTankList=function(){const host=document.getElementById('tankList');if(!host)return;const tanks=Array.isArray(window.getQuoteTanks?.())?window.getQuoteTanks():[];if(!tanks.length){host.innerHTML='<div class="tank-list-empty">No tanks added. Enter a tank size and click “Add Tank”.</div>';return}const readOnly=window.winkoIsQuotationApprovedReadOnly?.()===true;host.innerHTML='<table class="mini-table"><thead><tr><th>Tank</th><th>Tank Size</th><th>Wall Levels</th><th>Partition</th><th>Qty</th><th>Action</th></tr></thead><tbody>'+tanks.map((t,i)=>{const unit=t.dimensionUnit||'ft',parts=winkoNormalizePartitions(t,unit),partitionText=parts.length?parts.map((p,n)=>`P${n+1}: ${p.length} × ${p.width} ${p.dimensionUnit}`).join('; '):'None',levels=activeWallLevels(t.height);return `<tr><td>Tank ${i+1}</td><td>${formatDimension(t.displayLength??fromFeet(t.length,unit))} × ${formatDimension(t.displayWidth??fromFeet(t.width,unit))} × ${formatDimension(t.displayHeight??fromFeet(t.height,unit))} ${unit}</td><td>${levels.l1?'L1':''}${levels.l2?' + L2':''}${levels.l3?' + L3':''}${levels.l4?' + L4':''}</td><td>${escapeHtml(partitionText)}</td><td><input class="editable" type="number" min="1" value="${Number(t.qty)||1}" ${readOnly?'disabled':''} onchange="editTankQty(${i},this.value)"></td><td>${readOnly?'<span class="winko-read-only-label">Read only</span>':`<button type="button" class="secondary" onclick="useTank(${i})">Edit</button> <button type="button" class="danger" data-remove-tank="${i}">Delete</button>`}</td></tr>`}).join('')+'</tbody></table>';host.querySelectorAll('[data-remove-tank]').forEach(btn=>btn.onclick=()=>window.removeTank?.(Number(btn.dataset.removeTank)))};
+ function mount(){const toolbar=document.querySelector('#bom .toolbar');if(!toolbar||toolbar.querySelector('[data-view-calculation]'))return;const button=document.createElement('button');button.type='button';button.className='secondary';button.dataset.viewCalculation='1';button.textContent='View Calculation';button.setAttribute('data-main-only','true');button.onclick=openBreakdown;toolbar.insertBefore(button,toolbar.children[1]||null)}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
+})();
+</script>
+<style id="winko-bom-breakdown-css">.winko-breakdown-tank{display:grid;gap:8px;margin-bottom:12px;padding:10px;border:1px solid #dce6eb;border-radius:8px;background:#fbfdfe}.winko-breakdown-tank strong{color:#173b57;font-size:12px}.winko-breakdown-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;font-size:11px}.winko-breakdown-grid span{color:#647783}.winko-breakdown-grid b{text-align:right;color:#173b57}.winko-breakdown-partitions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding-top:8px;border-top:1px solid #e3eaee;font-size:10px;color:#536977}.winko-breakdown-partitions b{text-align:right;color:#173b57}.winko-breakdown-source-list{display:grid;gap:5px}.winko-breakdown-source-list div{display:flex;justify-content:space-between;gap:10px;padding:7px 8px;border-bottom:1px solid #e8edef;font-size:10px}.winko-breakdown-source-list span{color:#536977}.winko-breakdown-source-list b{color:#173b57;text-align:right}@media(max-width:520px){.winko-breakdown-grid,.winko-breakdown-partitions{grid-template-columns:1fr}.winko-breakdown-grid b,.winko-breakdown-partitions b{text-align:left}}
+</style>
+<script id="winko-engineering-bom-inspector-script">
+(function(){
+ 'use strict';
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+ const testTank=(length,width,height,extra={})=>({length,width,height,panelSize:4,qty:1,manhole:0,dimensionUnit:'ft',roofThickness:1.5,baseThickness:5,wallL1Thickness:5,wallL2Thickness:5,wallL3Thickness:0,wallL4Thickness:0,extLadderRequired:'no',intLadderRequired:'no',safetyCageRequired:'no',airVentRequired:'no',wliRequired:'no',partitions:[],...extra});
+ window.runEngineeringBomRegressions=function(){
+  const cases=[[24,24,8,36,48,84],[12,8,8,6,20,26],[16,12,8,12,28,40]].map(([length,width,height,base,wall,total])=>{const result=window.WinkoCalculator.calculateTankResult(testTank(length,width,height));return {name:`${length} × ${width} × ${height} panel geometry`,pass:result.geometry.basePanels===base&&result.geometry.externalWallPanels===wall&&result.geometry.totalSteelPanels===total&&result.geometry.roofPanels===base,actual:{base:result.geometry.basePanels,wall:result.geometry.externalWallPanels,total:result.geometry.totalSteelPanels,roof:result.geometry.roofPanels},expected:{base,wall,total,roof:base}}});
+  const invalid=window.WinkoCalculator.calculateTankResult(testTank(13,8,8));cases.push({name:'Panel-grid validation',pass:invalid.valid===false&&invalid.errors.some(x=>/panel grid/i.test(x)),actual:invalid.errors,expected:'Calculation blocked'});
+  const reference=window.WinkoCalculator.calculateTankResult(testTank(24,24,8)).verification.referenceStayRegression;cases.push({name:'24 × 24 × 8 stay/truss/support reference',pass:reference?.pass===true,actual:reference,expected:{cornerStay:28,mainStay:4,roofTruss:10,roofSupport:5}});
+  return {pass:cases.every(x=>x.pass),cases,ranAt:new Date().toISOString()};
+ };
+ function pair(label,value){return `<div><span>${esc(label)}</span><b>${esc(value)}</b></div>`}
+ function openInspector(){
+  if(typeof window.getWinkoRole==='function'&&window.getWinkoRole()==='sales'){window.WinkoRuntime?.notifyWarning?.('Engineering calculation details are available to Main only.');return false}
+  const source=Array.isArray(window.getQuoteTanks?.())&&window.getQuoteTanks().length?window.getQuoteTanks():[window.currentTankSnapshot?.()||{}],results=source.map(t=>window.WinkoCalculator.calculateTankResult(t)),regression=window.runEngineeringBomRegressions();
+  document.getElementById('winkoBomBreakdownModal')?.remove();
+  const modal=document.createElement('div');modal.id='winkoBomBreakdownModal';modal.className='winko-calc-backdrop winko-engineering-inspector';
+  modal.innerHTML=`<section class="winko-calc-dialog" role="dialog" aria-modal="true"><header class="winko-calc-head"><div><h2>Engineering BOM Inspector</h2><p>Drawing placement is primary. Geometry, workbook and factory references are cross-checks.</p></div><button type="button" class="winko-calc-close" aria-label="Close">×</button></header><div class="winko-calc-body" id="winkoEngineeringInspectorBody"></div></section>`;
+  const body=modal.querySelector('#winkoEngineeringInspectorBody');
+  body.innerHTML=results.map((r,index)=>{const e=r.engineering,g=r.geometry,v=r.verification,manual=r.bom.filter(x=>x.manualOverride);return `<section class="winko-inspector-tank"><h3>Tank ${index+1} — ${esc(r.tank.length)} × ${esc(r.tank.width)} × ${esc(r.tank.height)} ft</h3><div class="winko-inspector-cards"><article><h4>Geometry & source</h4>${pair('Panel grid',`${e.grid.columns} × ${e.grid.rows} × ${e.grid.levels}`)}${pair('Grid nodes',e.grid.nodes.length)}${pair('Base / wall / total panels',`${g.basePanels} / ${g.externalWallPanels} / ${g.totalSteelPanels}`)}${pair('Roof covers (separate)',g.roofPanels)}${pair('Engineering source',e.source)}${pair('Drawing ID / revision',`${e.drawingId||'Not linked'} / ${e.drawingRevision||'—'}`)}</article><article><h4>Actual placement counts</h4>${pair('Cleat A / B / C / D',`${e.cleatCounts.A} / ${e.cleatCounts.B} / ${e.cleatCounts.C} / ${e.cleatCounts.D}`)}${pair('Unique cleat nodes',e.cleats.length)}${pair('Stay members',e.stays.length)}${pair('Roof trusses / supports',`${e.roof.trusses.length} / ${e.roof.supports.length}`)}${pair('Partitions',e.partitions.length)}</article><article><h4>Reconciliation</h4>${pair('Panels',v.panelReconciliationOk?'MATCH':'FAIL')}${pair('Cleats',v.cleatReconciliationOk?'MATCH':'REVIEW')}${pair('Stays',v.stayReconciliationOk?'MATCH':'REVIEW')}${pair('Roof members',v.roofReconciliationOk?'MATCH':'REVIEW')}${pair('Production approval',v.productionApprovalRequired?'REQUIRED':'NOT REQUIRED')}</article></div><details open><summary>Source priority and cross-check differences</summary><div class="winko-inspector-table"><div class="head"><b>Item</b><b>Placement</b><b>Reference</b><b>Difference</b><b>Status</b></div>${Object.entries(e.crossChecks).map(([name,x])=>`<div><span>${esc(name)}</span><span>${esc(x.placementQty??'—')}</span><span>${esc(x.workbookQty??x.referenceQty??x.drawingQty??'—')}</span><span>${esc(x.difference??'—')}</span><b class="${x.status==='MATCH'?'ok':'review'}">${esc(x.status)}</b></div>`).join('')}</div></details><details><summary>Stay classification and traceability</summary><div class="winko-inspector-table stays"><div class="head"><b>ID</b><b>Level</b><b>Endpoints</b><b>Actual length</b><b>Catalogue / tolerance</b></div>${e.stays.length?e.stays.map(x=>`<div><span>${esc(x.id)}</span><span>${esc(x.level)}</span><span>${esc(x.start.join(','))} → ${esc(x.end.join(','))}</span><span>${esc(x.actualLengthFt.toFixed(3))} ft</span><b class="${x.classification.withinTolerance?'ok':'review'}">${esc(x.catalogueLabel)}${x.classification.withinTolerance?'':' (review)'}</b></div>`).join(''):'<p>No linked drawing stay schedule.</p>'}</div></details><details><summary>Manual overrides (${manual.length})</summary><div class="winko-inspector-table"><div class="head"><b>Item</b><b>Quantity</b><b>Reason</b><b>User</b><b>Timestamp</b></div>${manual.length?manual.map(x=>`<div><span>${esc(x.item)}</span><span>${esc(x.quantity)}</span><span>${esc(x.manualOverrideReason||'Missing')}</span><span>${esc(x.manualOverrideBy||'—')}</span><span>${esc(x.manualOverrideAt||'—')}</span></div>`).join(''):'<p>No manual overrides.</p>'}</div></details>${r.warnings.length?`<div class="winko-inspector-warning">${r.warnings.map(esc).join('<br>')}</div>`:''}</section>`}).join('')+`<section class="winko-regression-summary"><h3>Built-in regression checks</h3>${regression.cases.map(x=>pair(x.name,x.pass?'PASS':'FAIL')).join('')}</section>`;
+  modal.querySelector('.winko-calc-close').onclick=()=>modal.remove();modal.onclick=e=>{if(e.target===modal)modal.remove()};document.body.appendChild(modal);return true;
+ }
+ window.winkoOpenBomCalculationInspector=openInspector;
+ document.addEventListener('click',event=>{const button=event.target.closest?.('[data-view-calculation]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();openInspector()},true);
+})();
+</script>
+<style id="winko-engineering-bom-inspector-css">
+.winko-engineering-inspector .winko-calc-dialog{width:min(1180px,96vw);max-height:94vh}.winko-inspector-tank{border:1px solid #d8e3e9;border-radius:10px;padding:14px;margin-bottom:14px;background:#fff}.winko-inspector-tank h3,.winko-regression-summary h3{margin:0 0 12px;color:#123c59}.winko-inspector-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.winko-inspector-cards article{border:1px solid #e0e8ed;border-radius:8px;padding:10px;background:#f8fbfc}.winko-inspector-cards h4{margin:0 0 8px;color:#173b57}.winko-inspector-cards article>div,.winko-regression-summary>div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e4ebef;padding:5px 0;font-size:11px}.winko-inspector-cards span{color:#627783}.winko-inspector-cards b{color:#173b57;text-align:right}.winko-inspector-tank details{margin-top:10px;border:1px solid #dde7ec;border-radius:8px;overflow:hidden}.winko-inspector-tank summary{padding:9px 10px;background:#edf4f7;color:#173b57;font-weight:700;cursor:pointer}.winko-inspector-table{padding:8px}.winko-inspector-table>div{display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:8px;padding:6px;border-bottom:1px solid #edf1f3;font-size:10px}.winko-inspector-table .head{background:#f5f8fa;color:#526b79}.winko-inspector-table .ok{color:#18734a}.winko-inspector-table .review{color:#a35d00}.winko-inspector-warning{margin-top:10px;padding:9px;border-radius:7px;background:#fff3d5;color:#7a4a00;font-size:11px}.winko-regression-summary{border:1px solid #cfe2d8;border-radius:10px;padding:12px;background:#f5fbf7}@media(max-width:800px){.winko-inspector-cards{grid-template-columns:1fr}.winko-inspector-table>div{grid-template-columns:1fr 1fr}.winko-inspector-table .head{display:none}}
 </style>
 </body>
 </html>
