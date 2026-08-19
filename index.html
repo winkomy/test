@@ -1844,8 +1844,15 @@ body[data-app-role="sales"] #quotation .cost-grid{display:grid!important;grid-te
 <div class="compact-field"><label for="ceWidth">Width *</label><select id="ceWidth" data-tank-dimension="width" required><option value="4">4 ft</option><option value="8" selected>8 ft</option><option value="12">12 ft</option><option value="16">16 ft</option><option value="20">20 ft</option><option value="24">24 ft</option><option value="28">28 ft</option><option value="32">32 ft</option><option value="36">36 ft</option><option value="40">40 ft</option><option value="44">44 ft</option><option value="48">48 ft</option><option value="52">52 ft</option><option value="56">56 ft</option><option value="60">60 ft</option></select></div>
 <div class="compact-field"><label for="ceHeight">Height *</label><select id="ceHeight" data-tank-dimension="height" required><option value="4">4 ft</option><option value="8" selected>8 ft</option><option value="12">12 ft</option><option value="16">16 ft</option></select></div>
 <div class="compact-field"><label>Panel Size</label><input id="cePanelSize" min="0.01" step="0.01" type="number" value="4"/></div>
+<div class="compact-field"><label for="ceTankFinish">Tank Finish / Material</label><select id="ceTankFinish"><option value="HDG" selected>Hot-dip galvanised (HDG)</option></select></div>
+<div class="compact-field"><label for="ceInternalLiner">Internal Liner</label><select id="ceInternalLiner"><option value="Silicone liner" selected>Silicone liner</option><option value="HDPE liner">HDPE liner</option></select></div>
+<div class="compact-field"><label for="ceBaseSupport">Tank Support / Foundation</label><select id="ceBaseSupport"><option value="Existing RC plinth" selected>Existing RC plinth</option><option value="Steel C-channel / I-beam">Steel C-channel / I-beam</option><option value="Steel skid base with neoprene pad">Steel skid base with neoprene pad</option><option value="Other">Other</option></select></div>
+<div class="compact-field"><label for="ceComplianceStandard">Design Standard</label><select id="ceComplianceStandard"><option value="SANS 10329:2020" selected>SANS 10329:2020</option><option value="Project specification">Project specification</option><option value="Other">Other</option></select></div>
+<div class="compact-field full"><label for="ceTankScopeNote">Tank Scope / Description Note</label><textarea id="ceTankScopeNote" rows="2" placeholder="Optional scope, coating, or installation note for this tank"></textarea></div>
 <div class="compact-field"><label>External Ladder</label><select id="ceExtLadder"><option value="yes">Required</option><option value="no">Not Required</option></select></div>
 <div class="compact-field"><label>External Ladder Qty</label><input id="ceExtLadderQty" min="0" step="1" type="number" value="1"/></div>
+<div class="compact-field"><label for="ceSafetyCage">Safety Cage for Ladder</label><label class="winko-checkbox-inline"><input id="ceSafetyCage" type="checkbox"/> Yes — include in BOM <span>(unticked = No)</span></label></div>
+<div class="compact-field"><label>Safety Cage Qty</label><input id="ceSafetyCageQty" min="0" step="1" type="number" value="1"/></div>
 <div class="compact-field"><label>Internal Ladder</label><select id="ceIntLadder"><option value="yes">Required</option><option value="no">Not Required</option></select></div>
 <div class="compact-field"><label>Internal Ladder Qty</label><input id="ceIntLadderQty" min="0" step="1" type="number" value="1"/></div>
 <div class="compact-field"><label>Air Vent</label><select id="ceAirVent"><option value="yes">Required</option><option value="no">Not Required</option></select></div>
@@ -1927,6 +1934,12 @@ body[data-app-role="sales"] #quotation .cost-grid{display:grid!important;grid-te
 <div class="field" id="wallL3Field"><label>Wall L3 Thickness (mm)</label><input class="editable" id="wallL3Thickness" min="0" step="0.1" type="number" value="5.0"/></div>
 <div class="field" id="wallL4Field"><label>Wall L4 Thickness (mm)</label><input class="editable" id="wallL4Thickness" min="0" step="0.1" type="number" value="5.0"/></div>
 <div class="field"><label>Base Thickness (mm)</label><input class="editable" id="baseThickness" min="0" step="0.1" type="number" value="5.0"/></div>
+<div style="margin-top:12px;padding-top:10px;border-top:1px solid #d6e0e7"><strong style="font-size:13px">Tank Construction &amp; Finish</strong></div>
+<div class="field"><label for="tankFinish">Tank Finish / Material</label><select class="editable" id="tankFinish"><option value="HDG" selected>Hot-dip galvanised (HDG)</option></select></div>
+<div class="field"><label for="internalLiner">Internal Liner</label><select class="editable" id="internalLiner"><option value="Silicone liner" selected>Silicone liner</option><option value="HDPE liner">HDPE liner</option></select></div>
+<div class="field"><label for="baseSupport">Tank Support / Foundation</label><select class="editable" id="baseSupport"><option value="Existing RC plinth" selected>Existing RC plinth</option><option value="Steel C-channel / I-beam">Steel C-channel / I-beam</option><option value="Steel skid base with neoprene pad">Steel skid base with neoprene pad</option><option value="Other">Other</option></select></div>
+<div class="field"><label for="complianceStandard">Design Standard</label><select class="editable" id="complianceStandard"><option value="SANS 10329:2020" selected>SANS 10329:2020</option><option value="Project specification">Project specification</option><option value="Other">Other</option></select></div>
+<div class="field full"><label for="tankScopeNote">Tank Scope / Description Note</label><textarea class="editable" id="tankScopeNote" rows="2" placeholder="Optional scope, coating, or installation note for this tank"></textarea></div>
 <div class="field"><label>Tank Quantity</label><input class="editable" id="tankQty" min="1" step="1" type="number" value="1"/></div>
 <div style="margin-top:12px;padding-top:10px;border-top:1px solid #d6e0e7">
 <strong style="font-size:13px">Tank Accessories</strong>
@@ -1935,7 +1948,7 @@ body[data-app-role="sales"] #quotation .cost-grid{display:grid!important;grid-te
 <div class="field"><label>External Ladder Qty</label><input class="editable" id="extLadderQty" min="0" step="1" type="number" value="1"/></div>
 <div class="field"><label>Internal Ladder</label><select class="editable" id="intLadderRequired"><option value="yes">Required</option><option value="no">Not Required</option></select></div>
 <div class="field"><label>Internal Ladder Qty</label><input class="editable" id="intLadderQty" min="0" step="1" type="number" value="1"/></div>
-<div class="field"><label>Safety Cage</label><select class="editable" id="safetyCageRequired"><option value="yes">Required</option><option value="no">Not Required</option></select></div>
+<div class="field"><label for="safetyCageTick">Safety Cage for Ladder</label><label class="winko-checkbox-inline"><input id="safetyCageTick" type="checkbox"/> Yes — include in BOM <span>(unticked = No)</span></label><select aria-hidden="true" id="safetyCageRequired" tabindex="-1" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px"><option value="yes">Required</option><option value="no" selected>Not Required</option></select></div>
 <div class="field"><label>Safety Cage Qty</label><input class="editable" id="safetyCageQty" min="0" step="1" type="number" value="1"/></div>
 <div class="field"><label>Air Vent</label><select class="editable" id="airVentRequired"><option value="yes">Required</option><option value="no">Not Required</option></select></div>
 <div class="field"><label>Air Vent Qty</label><input class="editable" id="airVentQty" min="0" step="1" type="number" value="1"/></div>
@@ -3030,6 +3043,11 @@ function saveData(show=true){
   wallL3Thickness:document.getElementById("wallL3Thickness").value,
   wallL4Thickness:document.getElementById("wallL4Thickness").value,
   baseThickness:document.getElementById("baseThickness").value,
+  tankFinish:document.getElementById("tankFinish")?.value||"HDG",
+  internalLiner:document.getElementById("internalLiner")?.value||"Silicone liner",
+  baseSupport:document.getElementById("baseSupport")?.value||"Existing RC plinth",
+  complianceStandard:document.getElementById("complianceStandard")?.value||"SANS 10329:2020",
+  tankScopeNote:document.getElementById("tankScopeNote")?.value||"",
   tankQty:document.getElementById("tankQty").value,
   extLadderRequired:document.getElementById("extLadderRequired").value,
   extLadderQty:document.getElementById("extLadderQty").value,
@@ -3534,6 +3552,15 @@ function prepareQuotation(){
    const wli=t.wliRequired==="yes"?`Water Level Indicator × ${t.wliQty}`:"Not included";
    const airVent=t.airVentRequired==="yes"?`Air Vent × ${t.airVentQty}`:"Not included";
    const support=document.getElementById("editSupportNote").value||"";
+   const tankSupport=[t.baseSupport,support].filter(Boolean).join("; ");
+   // New quotations are restricted to HDG with either silicone or HDPE liner.
+   // Coerce legacy snapshots that used removed finish/liner choices so the
+   // quotation preview never prints an unsupported construction option.
+   const tankFinish="HDG";
+   const storedLiner=String(t.internalLiner||"");
+   const internalLiner=storedLiner==="HDPE liner"?"HDPE liner":"Silicone liner";
+   const tankStandard=t.complianceStandard||"SANS 10329:2020";
+   const tankScopeNote=t.tankScopeNote||"";
    const shortEx=document.getElementById("editShortExclusion").value||"";
    const partitionText=t.partitionRequired==="yes"
      ? `Internal partition size: ${t.partitionLength||0} ${t.partitionUnit||t.dimensionUnit||"ft"} × ${t.partitionWidth||0} ${t.partitionUnit||t.dimensionUnit||"ft"}; Quantity: ${t.partitionQty||0}`
@@ -3554,9 +3581,13 @@ function prepareQuotation(){
         <span>b) Ladders</span><span>:</span><span>${escapeHtml(ladder)}</span>
         <span>c) Water Level Indicator</span><span>:</span><span>${escapeHtml(wli)}</span>
         <span>d) Air Vent</span><span>:</span><span>${escapeHtml(airVent)}</span>
-        <span>e) Tank Support</span><span>:</span><span>${escapeHtml(support)}</span>
+        <span>e) Tank Support</span><span>:</span><span>${escapeHtml(tankSupport)}</span>
         <span>f) Partition</span><span>:</span><span>${escapeHtml(partitionText)}</span>
         <span>g) Exclusions</span><span>:</span><span>${escapeHtml(shortEx)}</span>
+        <span>h) Finish / coating</span><span>:</span><span>${escapeHtml(tankFinish)}</span>
+        <span>i) Internal liner</span><span>:</span><span>${escapeHtml(internalLiner)}</span>
+        <span>j) Design standard</span><span>:</span><span>${escapeHtml(tankStandard)}</span>
+        ${tankScopeNote?`<span>k) Scope note</span><span>:</span><span>${escapeHtml(tankScopeNote)}</span>`:""}
       </div>
     </td>
     <td class="num">${quoteAmount(unit)}</td>
@@ -3962,6 +3993,11 @@ function currentTankSnapshot(){
   roofThickness:n("roofThickness"),wallL1Thickness:n("wallL1Thickness"),
   wallL2Thickness:n("wallL2Thickness"),wallL3Thickness:n("wallL3Thickness"),wallL4Thickness:n("wallL4Thickness"),
   baseThickness:n("baseThickness"),
+  tankFinish:document.getElementById("tankFinish")?.value||"HDG",
+  internalLiner:document.getElementById("internalLiner")?.value||"Silicone liner",
+  baseSupport:document.getElementById("baseSupport")?.value||"Existing RC plinth",
+  complianceStandard:document.getElementById("complianceStandard")?.value||"SANS 10329:2020",
+  tankScopeNote:document.getElementById("tankScopeNote")?.value||"",
   extLadderRequired:document.getElementById("extLadderRequired").value,
   extLadderQty:n("extLadderQty"),
   intLadderRequired:document.getElementById("intLadderRequired").value,
@@ -3994,6 +4030,11 @@ function addTankToQuote(){
    sameNumber(x.wallL1Thickness,t.wallL1Thickness) && sameNumber(x.wallL2Thickness,t.wallL2Thickness) &&
    sameNumber(x.wallL3Thickness,t.wallL3Thickness) && sameNumber(x.wallL4Thickness,t.wallL4Thickness) &&
    sameNumber(x.baseThickness,t.baseThickness) &&
+   String(x.tankFinish||"HDG")===String(t.tankFinish||"HDG") &&
+  String(x.internalLiner||"Silicone liner")===String(t.internalLiner||"Silicone liner") &&
+   String(x.baseSupport||"Existing RC plinth")===String(t.baseSupport||"Existing RC plinth") &&
+   String(x.complianceStandard||"SANS 10329:2020")===String(t.complianceStandard||"SANS 10329:2020") &&
+   String(x.tankScopeNote||"")===String(t.tankScopeNote||"") &&
    String(x.extLadderRequired||"no")===String(t.extLadderRequired||"no") && sameNumber(x.extLadderQty,t.extLadderQty) &&
    String(x.intLadderRequired||"no")===String(t.intLadderRequired||"no") && sameNumber(x.intLadderQty,t.intLadderQty) &&
    String(x.safetyCageRequired||"no")===String(t.safetyCageRequired||"no") && sameNumber(x.safetyCageQty,t.safetyCageQty) &&
@@ -4045,8 +4086,11 @@ function useTank(i){
  document.getElementById("width").value=t.displayWidth??fromFeet(t.width,unit);
  document.getElementById("height").value=t.displayHeight??fromFeet(t.height,unit);
  document.getElementById("panelSize").value=t.displayPanelSize??fromFeet(t.panelSize,unit);
- ["manhole","tankQty","partitionRequired","partitionLength","partitionWidth","partitionQty","roofThickness","wallL1Thickness","wallL2Thickness","wallL3Thickness","wallL4Thickness","baseThickness"]
+ ["manhole","tankQty","partitionRequired","partitionLength","partitionWidth","partitionQty","roofThickness","wallL1Thickness","wallL2Thickness","wallL3Thickness","wallL4Thickness","baseThickness","tankFinish","internalLiner","baseSupport","complianceStandard","tankScopeNote"]
  .forEach(id=>{if(document.getElementById(id) && t[id]!==undefined)document.getElementById(id).value=t[id]});
+ if(document.getElementById("safetyCageRequired") && t.safetyCageRequired!==undefined)document.getElementById("safetyCageRequired").value=t.safetyCageRequired;
+ if(document.getElementById("safetyCageQty") && t.safetyCageQty!==undefined)document.getElementById("safetyCageQty").value=t.safetyCageQty;
+ window.winkoSyncSafetyCageCheckboxes?.();
  const normalizedPartitions=winkoNormalizePartitions(t,unit);
  if(typeof window.winkoSetCurrentPartitions==="function")window.winkoSetCurrentPartitions(normalizedPartitions,unit);
  else if(normalizedPartitions[0]){
@@ -4064,7 +4108,14 @@ function clearTankForm(){
  document.getElementById("width").value=unit==="m"?2.4384:8;
  document.getElementById("height").value=unit==="m"?2.4384:8;
  document.getElementById("panelSize").value=unit==="m"?1.2192:4;
- document.getElementById("tankQty").value=1;window.winkoSetCurrentPartitions?.([],unit);calculate();
+ document.getElementById("tankFinish").value="HDG";
+ document.getElementById("internalLiner").value="Silicone liner";
+ document.getElementById("baseSupport").value="Existing RC plinth";
+ document.getElementById("complianceStandard").value="SANS 10329:2020";
+ document.getElementById("tankScopeNote").value="";
+ document.getElementById("tankQty").value=1;
+ document.getElementById("safetyCageRequired").value="no";document.getElementById("safetyCageQty").value=1;window.winkoSyncSafetyCageCheckboxes?.();
+ window.winkoSetCurrentPartitions?.([],unit);calculate();
 }
 function renderTankList(){
  const el=document.getElementById("tankList");
@@ -4868,8 +4919,9 @@ function renderQuotationTankManager(){
    return;
   }
  const markup=quoteTanks.map((t,i)=>{
-  const accessories=[];
+   const accessories=[];
   if(t.extLadderRequired==="yes"&&Number(t.extLadderQty)>0)accessories.push(`External ladder × ${t.extLadderQty}`);
+  if(t.safetyCageRequired==="yes"&&Number(t.safetyCageQty)>0)accessories.push(`Safety cage × ${t.safetyCageQty}`);
   if(t.intLadderRequired==="yes"&&Number(t.intLadderQty)>0)accessories.push(`Internal ladder × ${t.intLadderQty}`);
   if(t.airVentRequired==="yes"&&Number(t.airVentQty)>0)accessories.push(`Air vent × ${t.airVentQty}`);
   if(t.wliRequired==="yes"&&Number(t.wliQty)>0)accessories.push(`WLI × ${t.wliQty}`);
@@ -5076,12 +5128,32 @@ setTimeout(()=>renderCustomerHistory(),100);
 })();
 
 function compactEntryValue(id){const e=document.getElementById(id);return e?String(e.value||'').trim():'';}
+function syncSafetyCageCheckboxes(){
+ const select=document.getElementById('safetyCageRequired');
+ if(!select)return;
+ const checked=String(select.value).toLowerCase()==='yes';
+ ['safetyCageTick','ceSafetyCage'].forEach(id=>{const tick=document.getElementById(id);if(tick)tick.checked=checked;});
+}
+function syncSafetyCageSelectFromCheckbox(tick){
+ const select=document.getElementById('safetyCageRequired');
+ if(!select||!tick)return;
+ const value=tick.checked?'yes':'no';
+ if(select.value!==value){select.value=value;select.dispatchEvent(new Event('change',{bubbles:true}));}
+ syncSafetyCageCheckboxes();
+}
+window.winkoSyncSafetyCageCheckboxes=syncSafetyCageCheckboxes;
 function compactSet(target,source){const t=document.getElementById(target),s=document.getElementById(source);if(t&&s)t.value=s.value;}
 let compactProceedBusy=false;
 let compactAddedTankSignature='';
 function compactSyncTankFields(){
- const map={crmCustomer:'ceCustomer',crmAddress:'ceAddress',crmAttention:'ceAttention',crmTel:'ceTel',crmEmail:'ceEmail',crmProject:'ceProject',crmRef:'ceRef',crmDate:'ceDate',crmPreparedBy:'cePreparedBy',length:'ceLength',width:'ceWidth',height:'ceHeight',panelSize:'cePanelSize',tankQty:'ceTankQty',dimensionUnit:'ceUnit',extLadderRequired:'ceExtLadder',intLadderRequired:'ceIntLadder',airVentRequired:'ceAirVent',wliRequired:'ceWli',partitionRequired:'cePartition',partitionType:'cePartitionType',partitionQty:'cePartitionQty',partitionLength:'cePartitionLength',partitionWidth:'cePartitionWidth',extLadderQty:'ceExtLadderQty',intLadderQty:'ceIntLadderQty',airVentQty:'ceAirVentQty',wliQty:'ceWliQty'};
- Object.entries(map).forEach(([target,source])=>compactSet(target,source));if(typeof window.winkoSetCurrentPartitions==='function')window.winkoSetCurrentPartitions(window.winkoGetQuickPartitions?.()||[],document.getElementById('ceUnit')?.value||'ft');syncCustomerToWorkingProject();return map;
+ const map={crmCustomer:'ceCustomer',crmAddress:'ceAddress',crmAttention:'ceAttention',crmTel:'ceTel',crmEmail:'ceEmail',crmProject:'ceProject',crmRef:'ceRef',crmDate:'ceDate',crmPreparedBy:'cePreparedBy',length:'ceLength',width:'ceWidth',height:'ceHeight',panelSize:'cePanelSize',tankQty:'ceTankQty',dimensionUnit:'ceUnit',tankFinish:'ceTankFinish',internalLiner:'ceInternalLiner',baseSupport:'ceBaseSupport',complianceStandard:'ceComplianceStandard',tankScopeNote:'ceTankScopeNote',extLadderRequired:'ceExtLadder',intLadderRequired:'ceIntLadder',airVentRequired:'ceAirVent',wliRequired:'ceWli',partitionRequired:'cePartition',partitionType:'cePartitionType',partitionQty:'cePartitionQty',partitionLength:'cePartitionLength',partitionWidth:'cePartitionWidth',extLadderQty:'ceExtLadderQty',intLadderQty:'ceIntLadderQty',airVentQty:'ceAirVentQty',wliQty:'ceWliQty'};
+ Object.entries(map).forEach(([target,source])=>compactSet(target,source));
+ const quickSafety=document.getElementById('ceSafetyCage');
+ const mainSafetyQty=document.getElementById('safetyCageQty');
+ const quickSafetyQty=document.getElementById('ceSafetyCageQty');
+ if(quickSafety)syncSafetyCageSelectFromCheckbox(quickSafety);
+ if(quickSafetyQty&&mainSafetyQty)mainSafetyQty.value=quickSafetyQty.value||'1';
+ if(typeof window.winkoSetCurrentPartitions==='function')window.winkoSetCurrentPartitions(window.winkoGetQuickPartitions?.()||[],document.getElementById('ceUnit')?.value||'ft');syncCustomerToWorkingProject();return map;
 }
 function compactTankSignature(){
  try{const t=currentTankSnapshot();const copy={...t};delete copy.qty;return JSON.stringify(copy)}catch(e){return ''}
@@ -5135,12 +5207,19 @@ function compactProceedToQuotation(){
 function compactEntryReset(){
  ['ceCustomer','ceAddress','ceAttention','ceTel','ceEmail','ceProject','ceRef','cePreparedBy'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
  const d=document.getElementById('ceDate');if(d)d.value=new Date().toISOString().slice(0,10);
- [['ceLength','12'],['ceWidth','8'],['ceHeight','8'],['cePanelSize','4'],['ceTankQty','1'],['ceExtLadderQty','1'],['ceIntLadderQty','1'],['ceAirVentQty','1'],['ceWliQty','1'],['cePartitionQty','1'],['cePartitionLength','0'],['cePartitionWidth','0']].forEach(([id,v])=>{const e=document.getElementById(id);if(e)e.value=v;});
+ [['ceLength','12'],['ceWidth','8'],['ceHeight','8'],['cePanelSize','4'],['ceTankQty','1'],['ceTankFinish','HDG'],['ceInternalLiner','Silicone liner'],['ceBaseSupport','Existing RC plinth'],['ceComplianceStandard','SANS 10329:2020'],['ceTankScopeNote',''],['ceSafetyCageQty','1'],['ceExtLadderQty','1'],['ceIntLadderQty','1'],['ceAirVentQty','1'],['ceWliQty','1'],['cePartitionQty','1'],['cePartitionLength','0'],['cePartitionWidth','0']].forEach(([id,v])=>{const e=document.getElementById(id);if(e)e.value=v;});
+ const quickSafety=document.getElementById('ceSafetyCage');if(quickSafety)quickSafety.checked=false;
+ const mainSafety=document.getElementById('safetyCageRequired');if(mainSafety)mainSafety.value='no';syncSafetyCageCheckboxes();
  const box=document.getElementById('compactEntryError');if(box)box.classList.remove('show');
   compactAddedTankSignature='';window.winkoSetQuickPartitions?.([],document.getElementById('ceUnit')?.value||'ft');window.winkoSetCurrentPartitions?.([],document.getElementById('ceUnit')?.value||'ft');renderQuotationTankManager();renderQuotationExtraItemsEditor();window.winkoApplyQuotationDefaults?.();
 }
 document.addEventListener('DOMContentLoaded',()=>{
  const d=document.getElementById('ceDate');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);
+ const mainSafetyTick=document.getElementById('safetyCageTick');
+ if(mainSafetyTick&&!mainSafetyTick.dataset.bound){mainSafetyTick.dataset.bound='1';mainSafetyTick.addEventListener('change',()=>syncSafetyCageSelectFromCheckbox(mainSafetyTick));}
+ const quickSafetyTick=document.getElementById('ceSafetyCage');
+ if(quickSafetyTick&&!quickSafetyTick.dataset.bound){quickSafetyTick.dataset.bound='1';quickSafetyTick.addEventListener('change',()=>syncSafetyCageSelectFromCheckbox(quickSafetyTick));}
+ syncSafetyCageCheckboxes();
  const unit=document.getElementById('ceUnit');
  if(unit){
   unit.dataset.previousUnit=unit.value||'ft';syncTankDimensionSelectOptions(unit.value||'ft','quick');
@@ -5745,7 +5824,7 @@ function buildBomRowsForRemote(snapshot,quoteId){
      const inputs=snapshot?.inputs||{},unit=safe(inputValue(inputs,'dimensionUnit')||'ft')==='m'?'m':'ft';
      const toFt=v=>unit==='m'?Number(v||0)/0.3048:Number(v||0);
      const t={id:'tank-1',length:toFt(inputValue(inputs,'length')),width:toFt(inputValue(inputs,'width')),height:toFt(inputValue(inputs,'height')),panelSize:Math.max(toFt(inputValue(inputs,'panelSize')),0.0001),dimensionUnit:unit,displayLength:Number(inputValue(inputs,'length'))||0,displayWidth:Number(inputValue(inputs,'width'))||0,displayHeight:Number(inputValue(inputs,'height'))||0,displayPanelSize:Number(inputValue(inputs,'panelSize'))||0,qty:Math.max(Number(inputValue(inputs,'tankQty'))||1,1),partitions:Array.isArray(inputs.partitions)?inputs.partitions:[]};
-     ['manhole','roofThickness','wallL1Thickness','wallL2Thickness','wallL3Thickness','wallL4Thickness','baseThickness','extLadderRequired','extLadderQty','intLadderRequired','intLadderQty','safetyCageRequired','safetyCageQty','airVentRequired','airVentQty','wliRequired','wliQty','manholeAccessoryQty','partitionRequired','partitionType','partitionLength','partitionWidth','partitionQty'].forEach(key=>{const value=inputValue(inputs,key);t[key]=/Qty|Thickness|Length|Width|manhole$|partitionQty/i.test(key)?Number(value)||0:value});
+     ['manhole','roofThickness','wallL1Thickness','wallL2Thickness','wallL3Thickness','wallL4Thickness','baseThickness','tankFinish','internalLiner','baseSupport','complianceStandard','tankScopeNote','extLadderRequired','extLadderQty','intLadderRequired','intLadderQty','safetyCageRequired','safetyCageQty','airVentRequired','airVentQty','wliRequired','wliQty','manholeAccessoryQty','partitionRequired','partitionType','partitionLength','partitionWidth','partitionQty'].forEach(key=>{const value=inputValue(inputs,key);t[key]=/Qty|Thickness|Length|Width|manhole$|partitionQty/i.test(key)?Number(value)||0:value});
      t.partitionUnit=unit;
      return t;
    };
@@ -6291,7 +6370,7 @@ body[data-app-role="main"] #customers .main-approval-queue{display:block}
  function deep(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
  function itemSnapshot(){try{return (typeof items!=='undefined'?items:[]).map(x=>{const o={};Object.keys(x).forEach(k=>{if(k!=='formula')o[k]=x[k]});return o})}catch(e){return[]}}
  function fieldValues(ids){const o={};ids.forEach(id=>{const x=el(id);if(x)o[id]=x.value});return o}
-  const inputIds=['dimensionUnit','length','width','height','panelSize','manhole','roofThickness','wallL1Thickness','wallL2Thickness','wallL3Thickness','wallL4Thickness','baseThickness','tankQty','extLadderRequired','extLadderQty','intLadderRequired','intLadderQty','safetyCageRequired','safetyCageQty','airVentRequired','airVentQty','wliRequired','wliQty','manholeAccessoryQty','partitionRequired','partitionType','partitionLength','partitionWidth','partitionQty','project','reference','preparedBy','bomDate','currency','wastePct','labourCost','installationCost','transportCost','otherCost','overheadPct','profitPct','discount','sstPct','installationRequired','transportRequired'];
+  const inputIds=['dimensionUnit','length','width','height','panelSize','manhole','roofThickness','wallL1Thickness','wallL2Thickness','wallL3Thickness','wallL4Thickness','baseThickness','tankFinish','internalLiner','baseSupport','complianceStandard','tankScopeNote','tankQty','extLadderRequired','extLadderQty','intLadderRequired','intLadderQty','safetyCageRequired','safetyCageQty','airVentRequired','airVentQty','wliRequired','wliQty','manholeAccessoryQty','partitionRequired','partitionType','partitionLength','partitionWidth','partitionQty','project','reference','preparedBy','bomDate','currency','wastePct','labourCost','installationCost','transportCost','otherCost','overheadPct','profitPct','discount','sstPct','installationRequired','transportRequired'];
   const crmIds=['crmCustomer','crmAddress','crmAttention','crmTel','crmEmail','crmProject','crmProjectLocation','crmProjectAddress','crmRef','crmPreparedBy','crmDate'];
   const descIds=['editIntroLine','editSubjectLine','editMainDescription','editCompliance','editLadderDescription','editWliDescription','editSupportNote','editShortExclusion','editClosingMessage','editClosingCompany','editPreparedByName','editClosingExtra'];
   function capture(){
@@ -6338,8 +6417,11 @@ body[data-app-role="main"] #customers .main-approval-queue{display:block}
    // Keep the compact Sales entry fields in lockstep with the restored
    // snapshot. Otherwise the freshly suggested reference can overwrite a
    // quotation opened from Main's queue during the next save/approval action.
-   const restored={ceCustomer:s.crm?.crmCustomer,ceAddress:s.crm?.crmAddress,ceAttention:s.crm?.crmAttention,ceTel:s.crm?.crmTel,ceEmail:s.crm?.crmEmail,ceProject:s.crm?.crmProject,ceProjectLocation:s.crm?.crmProjectLocation||s.projectLocationState,ceProjectAddress:s.crm?.crmProjectAddress||s.projectAddress,ceInstallationRequired:s.inputs?.installationRequired||s.installationRequired,ceTransportRequired:s.inputs?.transportRequired||s.transportRequired,ceRef:s.ref||s.crm?.crmRef||s.inputs?.reference,ceDate:s.crm?.crmDate,cePreparedBy:s.crm?.crmPreparedBy};
+   const restored={ceCustomer:s.crm?.crmCustomer,ceAddress:s.crm?.crmAddress,ceAttention:s.crm?.crmAttention,ceTel:s.crm?.crmTel,ceEmail:s.crm?.crmEmail,ceProject:s.crm?.crmProject,ceProjectLocation:s.crm?.crmProjectLocation||s.projectLocationState,ceProjectAddress:s.crm?.crmProjectAddress||s.projectAddress,ceInstallationRequired:s.inputs?.installationRequired||s.installationRequired,ceTransportRequired:s.inputs?.transportRequired||s.transportRequired,ceRef:s.ref||s.crm?.crmRef||s.inputs?.reference,ceDate:s.crm?.crmDate,cePreparedBy:s.crm?.crmPreparedBy,ceTankFinish:s.inputs?.tankFinish,ceInternalLiner:s.inputs?.internalLiner,ceBaseSupport:s.inputs?.baseSupport,ceComplianceStandard:s.inputs?.complianceStandard,ceTankScopeNote:s.inputs?.tankScopeNote};
    Object.entries(restored).forEach(([id,v])=>{if(v!=null&&el(id))el(id).value=v});
+   if(s.inputs?.safetyCageRequired!==undefined&&el('ceSafetyCage'))el('ceSafetyCage').checked=String(s.inputs.safetyCageRequired).toLowerCase()==='yes';
+   if(s.inputs?.safetyCageQty!==undefined&&el('ceSafetyCageQty'))el('ceSafetyCageQty').value=s.inputs.safetyCageQty;
+   window.winkoSyncSafetyCageCheckboxes?.();
    const restoredRef=restored.ceRef;if(restoredRef){['crmRef','reference','qRefInput'].forEach(id=>{if(el(id))el(id).value=restoredRef})}
    Object.entries(s.descriptions||{}).forEach(([id,v])=>{if(el(id))el(id).value=v});
    try{if(typeof quoteTanks!=='undefined')quoteTanks=deep(s.quoteTanks||[]).map(t=>{const normalized=winkoNormalizePartitions(t,t.dimensionUnit||'ft');return {...t,partitions:normalized,partitionRequired:normalized.length?'yes':(t.partitionRequired||'no'),partitionQty:normalized.length||Number(t.partitionQty)||0,partitionLength:normalized[0]?.length ?? (Number(t.partitionLength)||0),partitionWidth:normalized[0]?.width ?? (Number(t.partitionWidth)||0)}})}catch(e){}
@@ -8399,6 +8481,7 @@ function selfTest(){const checks=[],test=(name,pass,detail)=>checks.push({name,p
 .winko-setup-auto-cost{display:block;margin-top:4px;color:#607480;font-size:10px;line-height:1.35}
 .winko-setup-field input[readonly]{background:#f3f7f9;color:#31586f;cursor:not-allowed}
 #quickEntry [data-tank-dimension]{min-width:0}
+.winko-checkbox-inline{display:inline-flex!important;align-items:center;gap:7px;min-height:32px;padding:7px 10px;border:1px solid #c7d9e3;border-radius:8px;background:#f7fbfd;color:#214c67;font-size:11px;font-weight:750;cursor:pointer}.winko-checkbox-inline input{width:17px;height:17px;margin:0;accent-color:#123f5e}
 </style>
 </body>
 </html>
