@@ -2053,7 +2053,7 @@ body[data-app-role="sales"] #quotation .cost-grid{display:grid!important;grid-te
 <div class="compact-field"><label for="ceHeight">Height *</label><input id="ceHeight" data-tank-dimension="height" type="number" inputmode="decimal" min="4" max="16" step="4" value="8" required/></div>
 <div class="compact-field"><label>Panel Size</label><input id="cePanelSize" min="0.01" step="0.01" type="number" value="4"/></div>
 <div class="compact-field"><label for="ceTankFinish">Tank Finish / Material</label><select id="ceTankFinish"><option value="HDG" selected>Hot-dip galvanised (HDG)</option></select></div>
-<div class="compact-field"><label for="ceInternalLiner">Internal Liner Type</label><select id="ceInternalLiner"><option value="Silicone liner" selected>Silicone</option><option value="HDPE liner">HDPE</option></select></div>
+<div class="compact-field"><label for="ceInternalLiner">Internal Liner Type</label><input id="ceInternalLiner" list="internalLinerOptions" value="Silicone liner" placeholder="Type liner specification" autocomplete="off"/><datalist id="internalLinerOptions"><option value="Silicone liner"></option><option value="HDPE liner"></option></datalist></div>
 <div class="compact-field"><label for="ceBaseSupport">Tank Support / Foundation</label><select id="ceBaseSupport"><option value="Existing RC plinth" selected>Existing RC plinth</option><option value="Steel C-channel / I-beam">Steel C-channel / I-beam</option><option value="Steel skid base with neoprene pad">Steel skid base with neoprene pad</option><option value="Other">Other</option></select></div>
 <div class="compact-field"><label for="ceComplianceStandard">Design Standard</label><select id="ceComplianceStandard"><option value="SANS 10329:2020" selected>SANS 10329:2020</option><option value="Project specification">Project specification</option><option value="Other">Other</option></select></div>
 <div class="compact-field full"><label for="ceTankScopeNote">Tank Scope / Description Note</label><textarea id="ceTankScopeNote" rows="2" placeholder="Optional scope, coating, or installation note for this tank"></textarea></div>
@@ -2145,7 +2145,7 @@ body[data-app-role="sales"] #quotation .cost-grid{display:grid!important;grid-te
 <div class="field"><label>Base Thickness (mm)</label><input class="editable" id="baseThickness" min="0" step="0.1" type="number" value="5.0"/></div>
 <div style="margin-top:12px;padding-top:10px;border-top:1px solid #d6e0e7"><strong style="font-size:13px">Tank Construction &amp; Finish</strong></div>
 <div class="field"><label for="tankFinish">Tank Finish / Material</label><select class="editable" id="tankFinish"><option value="HDG" selected>Hot-dip galvanised (HDG)</option></select></div>
-<div class="field"><label for="internalLiner">Internal Liner Type</label><select class="editable" id="internalLiner"><option value="Silicone liner" selected>Silicone</option><option value="HDPE liner">HDPE</option></select></div>
+<div class="field"><label for="internalLiner">Internal Liner Type</label><input class="editable" id="internalLiner" list="internalLinerOptions" value="Silicone liner" placeholder="Type liner specification" autocomplete="off"/></div>
 <div class="field"><label for="baseSupport">Tank Support / Foundation</label><select class="editable" id="baseSupport"><option value="Existing RC plinth" selected>Existing RC plinth</option><option value="Steel C-channel / I-beam">Steel C-channel / I-beam</option><option value="Steel skid base with neoprene pad">Steel skid base with neoprene pad</option><option value="Other">Other</option></select></div>
 <div class="field"><label for="complianceStandard">Design Standard</label><select class="editable" id="complianceStandard"><option value="SANS 10329:2020" selected>SANS 10329:2020</option><option value="Project specification">Project specification</option><option value="Other">Other</option></select></div>
 <div class="field full"><label for="tankScopeNote">Tank Scope / Description Note</label><textarea class="editable" id="tankScopeNote" rows="2" placeholder="Optional scope, coating, or installation note for this tank"></textarea></div>
@@ -3802,12 +3802,11 @@ function prepareQuotation(){
    const airVent=t.airVentRequired==="yes"?`${airVentSize}' Air Vent × ${t.airVentQty}`:"Not included";
    const support=document.getElementById("editSupportNote").value||"";
    const tankSupport=[t.baseSupport,support].filter(Boolean).join("; ");
-   // New quotations are restricted to HDG with either silicone or HDPE liner.
-   // Coerce legacy snapshots that used removed finish/liner choices so the
-   // quotation preview never prints an unsupported construction option.
+   // Keep the liner as user-entered quotation data. Silicone and HDPE remain
+   // quick suggestions, but project-specific liner specifications are allowed.
    const tankFinish="HDG";
    const storedLiner=String(t.internalLiner||"");
-   const internalLiner=storedLiner==="HDPE liner"?"HDPE liner":"Silicone liner";
+   const internalLiner=storedLiner.trim()||"Silicone liner";
    const tankStandard=t.complianceStandard||"SANS 10329:2020";
    const tankScopeNote=t.tankScopeNote||"";
    const shortEx=document.getElementById("editShortExclusion").value||"";
