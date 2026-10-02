@@ -1,0 +1,25 @@
+#quickEntry .tank-construction{grid-column:1/-1;width:100%;min-width:0;padding:10px 12px;border:1px solid #d6e3ea;border-radius:7px;background:#fff;box-sizing:border-box}
+#quickEntry .tank-construction h4,#quickEntry .tank-accessory-body h4{margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#173b57}
+#quickEntry .tank-construction-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#quickEntry .tank-construction-grid .compact-field{min-width:0;margin:0}
+#quickEntry .tank-construction [hidden]{display:none!important}
+#quickEntry #ceInternalLinerOtherField{margin-top:8px}
+#quickEntry .tank-accessories{background:#fff!important;border:1px solid #d6e3ea!important;box-shadow:none!important}
+#quickEntry .tank-accessories>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px!important;color:#173b57!important}
+#quickEntry .tank-accessories>summary:after{display:none!important}
+#quickEntry .accessory-disclosure:after{content:'Show ▾';font-size:12px;font-weight:600}
+#quickEntry .tank-accessories[open] .accessory-disclosure:after{content:'Hide ▴'}
+#quickEntry .tank-accessory-body{padding:0 12px 10px}
+#quickEntry .tank-accessory-body h4:not(:first-child){margin-top:12px;padding-top:12px;border-top:1px solid #e4ebef}
+#quickEntry .tank-accessory-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;min-height:44px}
+#quickEntry .tank-accessory-row label{margin:0!important;letter-spacing:normal!important;text-transform:none!important;font-size:12px!important;font-weight:600!important;color:#173b57!important}
+#quickEntry .accessory-check{display:flex!important;align-items:center;gap:8px;min-height:44px;cursor:pointer}
+#quickEntry .accessory-check input[type=checkbox]{appearance:auto!important;accent-color:#173b57;width:19px!important;height:19px!important;min-height:19px!important;padding:0!important;margin:0;flex-shrink:0}
+#quickEntry .accessory-number{display:flex!important;align-items:center;gap:6px;white-space:nowrap}
+#quickEntry .accessory-number input{width:62px!important;min-width:0!important;min-height:34px!important;padding:6px 8px!important;box-sizing:border-box}
+#quickEntry .tank-accessories [hidden]{display:none!important}
+#quickEntry .tank-accessories input:disabled{background:#f0f3f5!important;color:#75838e!important;opacity:.65;cursor:not-allowed}
+#quickEntry .tank-accessories input:focus-visible{outline:2px solid #ed8b00!important;outline-offset:3px}
+#quickEntry .tank-accessory-selection{display:block;margin:3px 0 0;color:#607888;font-size:11px;font-weight:400;line-height:1.5}
+#quickEntry .tank-accessories[open] .tank-accessory-selection{display:none}
+@media(max-width:520px){#quickEntry .tank-construction-grid{grid-template-columns:1fr}#quickEntry .tank-accessory-row{grid-template-columns:minmax(0,1fr) auto}#quickEntry .tank-accessory-row .accessory-number:nth-of-type(3){grid-column:2;justify-self:end;padding-bottom:8px}#quickEntry .accessory-check{font-size:13px!important}}
